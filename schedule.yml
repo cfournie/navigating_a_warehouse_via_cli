@@ -1,0 +1,75 @@
+line-item-facts:
+  monitoring: normal
+  owner: team@example.com
+  frequency: 2h
+  slo: 4h
+  build-customer-dim-flow:
+    flow: customer-orders-dimension
+  build-parts-suppliers-dim-flow:
+    flow: parts-suppliers-dimension
+  build-facts:
+    resource_class: medium
+    file: facts/line_item_facts_builder.py
+    command_options:
+      lineitems: /data/raw/lineitem
+      output: /var/data/unresolved_facts/line_item_facts/
+  resolve:
+    resource_class: medium
+    file: facts/resolvers/line_item_facts_resolver.py
+    command_options:
+      unresolved-facts: /var/data/unresolved_facts/line_item_facts/{{latest}}
+      customer-orders: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
+      parts-suppliers: /data/frontroom/dimensions/parts_suppliers_dimension/{{latest}}
+      output: /data/frontroom/facts/line_item_facts/
+    dependencies:
+      - build-facts
+      - build-customer-dim-flow
+      - build-parts-suppliers-dim-flow
+  load:
+    into:
+      - redshift
+      - presto
+    resource_class: large
+    path: /data/frontroom/facts/line_item_facts/{{latest}}
+    table: business.line_item_facts
+    dependencies:
+      - resolve
+
+customer-orders-dimension:
+  monitoring: normal
+  owner: team@example.com
+  build:
+    resource_class: medium
+    file: dimensions/customer_orders_dimension.py
+    command_options:
+      region: /data/raw/region
+      nation: /data/raw/nation
+      customers: /data/raw/customer
+      orders: /data/raw/orders
+      output: /data/frontroom/dimensions/customer_orders_dimension/
+  load:
+    into:
+      - presto
+    path: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
+    table: business.customer_orders_dimension
+    dependencies:
+      - build
+
+parts-suppliers-dimension:
+  monitoring: normal
+  owner: team@example.com
+  build:
+    resource_class: medium
+    file: dimensions/parts_suppliers_dimension.py
+    command_options:
+      partsupp: /data/raw/partsupp
+      output: /data/frontroom/dimensions/parts_suppliers_dimension/
+  load:
+    into:
+      - redshift
+      - presto
+    resource_class: large
+    path: /data/frontroom/dimensions/parts_suppliers_dimension/{{latest}}
+    table: business.parts_suppliers_dimension
+    dependencies:
+      - build
