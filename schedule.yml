@@ -9,13 +9,13 @@ line-item-facts:
     flow: parts-suppliers-dimension
   build-facts:
     resource_class: medium
-    file: facts/line_item_facts_builder.py
+    file: jobs/line_item_facts_builder.py
     command_options:
       lineitems: /data/raw/lineitem
       output: /var/data/unresolved_facts/line_item_facts/
   resolve:
     resource_class: medium
-    file: facts/resolvers/line_item_facts_resolver.py
+    file: jobs/line_item_facts_resolver.py
     command_options:
       unresolved-facts: /var/data/unresolved_facts/line_item_facts/{{latest}}
       customer-orders: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
@@ -40,7 +40,7 @@ customer-orders-dimension:
   owner: team@example.com
   build:
     resource_class: medium
-    file: dimensions/customer_orders_dimension.py
+    file: jobs/customer_orders_dimension.py
     command_options:
       region: /data/raw/region
       nation: /data/raw/nation
@@ -60,7 +60,7 @@ parts-suppliers-dimension:
   owner: team@example.com
   build:
     resource_class: medium
-    file: dimensions/parts_suppliers_dimension.py
+    file: jobs/parts_suppliers_dimension.py
     command_options:
       partsupp: /data/raw/partsupp
       output: /data/frontroom/dimensions/parts_suppliers_dimension/
