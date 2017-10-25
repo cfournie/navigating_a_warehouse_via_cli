@@ -9,13 +9,13 @@ line-item-facts:
     flow: parts-suppliers-dimension
   build-facts:
     resource_class: medium
-    file: jobs/line_item_facts_builder.py
+    executable: jobs/line_item_facts_builder.py
     command_options:
       lineitems: /data/raw/lineitem
       output: /var/data/unresolved_facts/line_item_facts/
   resolve:
     resource_class: medium
-    file: jobs/line_item_facts_resolver.py
+    executable: jobs/line_item_facts_resolver.py
     command_options:
       unresolved-facts: /var/data/unresolved_facts/line_item_facts/{{latest}}
       customer-orders: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
@@ -26,12 +26,12 @@ line-item-facts:
       - build-customer-dim-flow
       - build-parts-suppliers-dim-flow
   load:
-    into:
-      - redshift
-      - presto
     resource_class: large
-    path: /data/frontroom/facts/line_item_facts/{{latest}}
-    table: business.line_item_facts
+    executable: jobs/loader.py
+    command_options:
+      path: /data/frontroom/facts/line_item_facts/{{latest}}
+      table: business.line_item_facts
+      destination: presto
     dependencies:
       - resolve
 
@@ -40,7 +40,7 @@ customer-orders-dimension:
   owner: team@example.com
   build:
     resource_class: medium
-    file: jobs/customer_orders_dimension.py
+    executable: jobs/customer_orders_dimension.py
     command_options:
       region: /data/raw/region
       nation: /data/raw/nation
@@ -48,10 +48,12 @@ customer-orders-dimension:
       orders: /data/raw/orders
       output: /data/frontroom/dimensions/customer_orders_dimension/
   load:
-    into:
-      - presto
-    path: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
-    table: business.customer_orders_dimension
+    resource_class: large
+    executable: jobs/loader.py
+    command_options:
+      path: /data/frontroom/dimensions/customer_orders_dimension/{{latest}}
+      table: business.customer_orders_dimension
+      destination: presto
     dependencies:
       - build
 
@@ -60,16 +62,16 @@ parts-suppliers-dimension:
   owner: team@example.com
   build:
     resource_class: medium
-    file: jobs/parts_suppliers_dimension.py
+    executable: jobs/parts_suppliers_dimension.py
     command_options:
       partsupp: /data/raw/partsupp
       output: /data/frontroom/dimensions/parts_suppliers_dimension/
   load:
-    into:
-      - redshift
-      - presto
     resource_class: large
-    path: /data/frontroom/dimensions/parts_suppliers_dimension/{{latest}}
-    table: business.parts_suppliers_dimension
+    executable: jobs/loader.py
+    command_options:
+      path: /data/frontroom/dimensions/parts_suppliers_dimension/{{latest}}
+      table: business.parts_suppliers_dimension
+      destination: presto
     dependencies:
       - build
