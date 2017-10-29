@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: 'Roboto'; }
+      h1, h2, h3 {
+        font-family: 'Roboto';
+        font-weight: bold;
+        color: #FFFFFF;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-slide-content {
+        background-color: #223274;
+        color: #FFFFFF;
+      }
+
+      .remark-slide-container {
+      visibility: hidden;
+          display: initial;
+      }
+      .remark-visible {
+          visibility: visible;
+      }
+  
+      em {
+        color: #fb8b8a;
+        font-style:normal;
+      }
+
+      .statistic {
+        font-size: 85pt;
+        font-weight: bold;
+        color: #44bebf;
+      }
+    </style>
+
+    <link rel="stylesheet" href="./mermaid.dark.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+layout: true
+class: center, middle
+
+---
+
+# Navigating a Data Warehouse via CLI
+
+Chris Fournier (@cfournie)
+
+<br/><br/>
+
+<img src="./shopify_monotone_white.svg" width="120pt" />
+
+???
+
+Hi, I'm Chris Fournier. I work on one of the engineering teams at Shopify that maintains our data warehouse.
+
+In case you haven't heard about Shopify, we try to make commerce accessible and better for everyone, and one way that we do that is by hosting online stores for our merchants and our team specifically helps them receive accurate and timely data on all of the ways that they sell their products. A large part of how we do that is using our data warehouse.
+
+---
+
+## What is a *data warehouse*?
+
+???
+
+But what is a data warehouse?
+
+Really it's just a repository of data that we've collected from operational systems (like online stores) that has been transformed in a way that makes it easy to answer various questions about a topic of interest and loaded into systems that make it easy to query this data.
+
+---
+
+## GMV
+
+<img src="./gmv.png" height="500pt" />
+
+???
+
+One example of a question that we try to answer for Shopify as a whole is how much has been sold through our platform? We call that gross merchandise value (or GMV) and that's one of the metrics that we use as a company to gauge our health (in addition to the number merchants, etc.).
+
+This is not trivial calculate given the volume of orders and transactions that we process, differing currencies, chargebacks that can occur months later, etc. This could be a talk or two on its own.
+
+How do we calculate this and make it accessible to the rest of the business?
+
+---
+class: center, middle
+
+## Batch jobs
+
+### (E)xtract, (T)ransform, and (L)oad
+
+<div class="mermaid">
+graph LR
+    A(Extract orders)-->C(Compute GMV)
+    B(Extract transactions)-->C
+    C-->D(Load GMV to Database)
+</div>
+
+<br><br><br>
+
+
+???
+We predominantly run jobs that:
+  - Extract batches of data from operational systems
+  - Transform it into facts that we care about, and
+  - Load those facts to a database for analysts to create reports upon
+
+These batch jobs themselves are organized into groups of jobs that we refer to as "flows", and both the implementations and data dependencies between these jobs change frequently. How freuqntly?
+
+---
+
+## Development speed
+
+<span style="float:left;">
+<span class="statistic">1100+</span><br>
+ETL job implementations<br>(as of Nov 1017)
+</span>
+
+<span style="float:right;">
+<span class="statistic">15.2</span><br>
+Deploys per day in 2017 on<br>average (±8.6 std dev)
+</span>
+
+
+<br/><br/><br/><br/><br/><br/><br/><br/><br/>
+
+
+???
+
+We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
+
+Suffice to say, there are a lot of these jobs and they change often. In engineering it's our job to help our analysts keep these jobs running reliably, and to do so we need to be able to navaigate this ever-changing set of jobs and their implementations.
+
+How do we do that?
+
+---
+
+## Hue
+
+<img src="./hue.png" width="90%">
+
+???
+
+One way that we navigate our jobs is through a user interaface called Hue. It's a very handy way to visualize flows (our groups of jobs) and jobs themselves.
+
+We use Oozie as our scheduler and YARN as our resource manage, and Hue gives us a window into both the logs that our jobs produce and tries to visualize our list of flows and jobs, but it was not meant for the number of jobs that we run; its renders UI sluggishly and search occurs only within the current page, not through all results.
+
+It's biggest limitation is that we can only actually search by a flow's name, and not by any of its otehr metadata (e.g. the job names within it, where it reads/writes, what type, etc.).
+
+---
+
+
+       
+# YAML?
+
+.left[
+```yaml
+order-transaction-states-incremental:
+  monitoring: active
+  owner: team@example.com
+
+  extract-orders:
+    executable: jobs/extract_orders.py
+    inputs: ['orders@database']
+    output: /data/raw/orders/
+
+  extract-transactions:
+    executable: jobs/extract_transactions.py
+    inputs: ['transactions@database']
+    output: /data/raw/transactions/
+
+  compute-gmv:
+    resource_class: xxlarge
+    executable: jobs/compute_gmv.py
+    inputs: ['/data/raw/orders/', '/data/raw/transactions/']
+    output: /data/frontroom/gmv-facts/
+
+  load-gmv:
+    resource_class: xxlarge
+    executable: jobs/loader.py
+    input: /data/frontroom/gmv-facts/
+    output: shopify.gmv_facts@database
+```
+]
+
+???
+
+Can open YAML file and look around. Can use editor find tools. Can use regex and get counts.
+
+Is there a way that we can do this without an editor, and maybe get more analytical power?
+
+Yes, we have a lot of the same tools already available on Unix from your terminal.
+
+---
+
+## `grep` YAML
+
+#### *Which* jobs use `xxlarge` resources?
+.left[
+```shell
+user@host$ grep xxlarge -B3 schedule.yml
+  compute-gmv:
+    resource_class: xxlarge
+```
+]
+
+#### *What* are the names of our flows?
+.left[
+```shell
+user@host$ grep "^[a-z\-]\{1,\}:" schedule.yml
+line-item-facts:
+customer-orders-dimension:
+parts-suppliers-dimension:
+order-transaction-states-incremental:
+```
+]
+
+#### *How many* jobs use `xxlarge` resources? Or how many flows are there?
+
+<br><br>
+
+---
+
+## Pipes
+
+TODO explain pipes
+
+#### *How many* jobs use `xxlarge` resources?
+
+.left[
+```shell
+user@host$ grep xxlarge schedule.yml | wc -l
+       2
+```
+]
+
+#### *How many* flows are there?
+
+.left[
+```shell
+user@host$ grep "^[a-z\-]\{1,\}:" schedule.yml | wc -l
+       4
+```
+]
+
+<br><br>
+
+---
+
+## Problem
+
+How do we handle inferred values (e.g. resource_class default)
+How do we view multiple attributes of a flow/job?
+
+---
+
+## Solution
+
+Python script! Output a table of flows.
+
+.left[
+```python
+#!/usr/bin/env python
+```
+```python
+import lib
+
+if __name__ == '__main__':
+    flows = lib.generate_schedule()
+    for flow_name, flow in flows.items():
+        print(flow_name, flow.owner, flow.frequency, flow.slo)
+
+```
+]
+
+---
+
+## Solution 2
+
+Output a table of jobs.
+ 
+---
+
+## Which jobs use xxlarge resources?
+
+`awk`
+
+---
+
+## Just the names of xxlarge resource jobs
+
+`cut`
+
+---
+
+## Names and implementations
+
+`cut`, `column -t`
+
+---
+
+## Which jobs have no implementation?
+
+`awk` for "NA"
+
+
+---
+
+## Denormalized data
+
+Show flow and job data together
+
+---
+
+
+## Dataset graph
+
+---
+
+
+## Flatten as input, output
+
+---
+
+## Flatten as input, downstream output, depth
+
+---
+
+## Data poisioning uses
+
+Which jobs are downstream of other jobs that are of type X?
+
+List jobs of type X
+
+List dowstream of all jobs
+
+Need to join!
+
+---
+
+## Join
+
+---
+
+## Arbitrary Qs possible
+
+---
+
+## Speed
+
+- Perception of speed (us generators and output each line as generated)
+- Profile using cprofile
+- Generate cols on demand
+- Cache output (invalidate on input changes)
+
+---
+
+## Testing
+
+- Move as much code into your models and unit test there
+- Script should produce parseable output; mock its data and parse it
+- Integration test against real data (answer a Q that should remain stable)
+
+    </textarea>
+    <link rel="stylesheet" href="tomorrow-night-blue.css">
+    <script src="highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="remark.min.js"></script>
+
+    <script src="./mermaid.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+    
+    <script>
+      var slideshow = remark.create({
+        // Set the slideshow display ratio
+        // Default: '4:3'
+        // Alternatives: '16:9', ...
+        ratio: '4:3',
+
+      highlightLanguage: 'python',
+      highlightStyle: 'tomorrow-night-blue',
+      highlightLines: true,
+      
+        // Navigation options
+        navigation: {
+          // Enable or disable navigating using scroll
+          // Default: true
+          // Alternatives: false
+          scroll: true,
+
+          // Enable or disable navigation using touch
+          // Default: true
+          // Alternatives: false
+          touch: true,
+
+          // Enable or disable navigation using click
+          // Default: false
+          // Alternatives: true
+          click: false
+        },
+
+        // Customize slide number label, either using a format string..
+        slideNumberFormat: 'Slide %current% of %total%',
+        // .. or by using a format function
+        slideNumberFormat: function (current, total) {
+          return 'Slide ' + current + ' of ' + total;
+        },
+
+        // Enable or disable counting of incremental slides in the slide counting
+        countIncrementalSlides: true
+      }); 
+    </script>
+  </body>
+</html>
