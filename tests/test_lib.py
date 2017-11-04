@@ -1,88 +1,103 @@
 import random
 
 import faker
-import lib
+import navigate_warehouse_via_cli.lib as lib
 import pytest
 
 
 @pytest.fixture
-def yaml_schedule():
-    return '''
-flow-a:
-  monitoring: active
-  owner: team@example.com
-  frequency: 2h
-  slo: 4h
-  sub-flow:
-    flow: flow-b
-  build:
-    resource_class: medium
-    executable: jobs/builder-a.py
-    command_options:
-      input-a: /data/raw/input_a
-      output: /var/data/facts/output_a
-    dependencies:
-      - sub-flow
-  load:
-    resource_class: large
-    executable: jobs/loader.py
-    command_options:
-      path: /var/data/facts/output_a
-      table: business.output_a
-      destination: presto
-    dependencies:
-      - build
+def random_seed():
+    random.seed(2)
 
-flow-b:
-  monitoring: passive
-  owner: team@example.com
-  build:
-    resource_class: medium
-    executable: jobs/builder-b.py
-    command_options:
-      input-b: /data/raw/input_a
-      output: /var/data/facts/output_a
-  load:
-    resource_class: large
-    executable: jobs/loader.py
-    command_options:
-      path: /var/data/facts/output_a
-      table: business.output_a
-      destination: presto
-    dependencies:
-      - build
-'''.lstrip()
+pytestmark = pytest.mark.usefixtures("random_seed")
 
 
+def test_create_path():
+    assert lib.create_path() == '/data/witty/abnormal/meeting'
+    assert lib.create_path('my-name') == '/data/fine/cake/my_name'
 
-def test_read_schedule(yaml_schedule, tmpdir):
-    schedule_file = tmpdir.join('schedule.yml')
-    schedule_file.write(yaml_schedule)
-    
-    flows = lib.read_schedule(str(schedule_file))
 
-    assert flows.keys() == {'flow-a', 'flow-b'}
+def test_create_name():
+    assert lib.create_name() == 'abnormal-meeting'
 
-    assert flows['flow-a'].monitoring == lib.Monitoring.ACTIVE
-    assert flows['flow-a'].frequency == '2h'
-    assert flows['flow-a'].slo == '4h'
-    assert flows['flow-a'].jobs.keys() == {'sub-flow', 'build', 'load'}
 
-    assert flows['flow-a'].jobs['sub-flow'].name == 'flow-b'
-    
-    assert flows['flow-a'].jobs['build'].resource_class == 'medium'
-    assert flows['flow-a'].jobs['build'].executable == 'jobs/builder-a.py'
-    assert flows['flow-a'].jobs['build'].dependencies == ['sub-flow']
-    assert flows['flow-a'].jobs['build'].command_options == {'input-a': '/data/raw/input_a',
-                                                             'output': '/var/data/facts/output_a'}
+def test_generate_job():
+    # Specify output
+    job = lib.generate_job(
+        name='my-job',
+        potential_inputs=['input-a', 'input-b', 'input-c'],
+        output='my-output'
+    )
+    assert job.executable == 'jobs/my-job.py'
+    assert job.inputs == {'input-a',}
+    assert job.output == 'my-output'
+
+    # Don't specify output
+    job = lib.generate_job(
+        name='my-job',
+        potential_inputs=['input-a', 'input-b', 'input-c'],
+    )
+    assert job.executable == 'jobs/my-job.py'
+    assert job.inputs == {'input-a', 'input-c',}
+    assert job.output == '/data/alleged/hotel/my_job'
 
 
 def test_generate_schedule():
-    random.seed(2)
-    fake = faker.Faker('en_CA')
-    fake.seed(2)
-    
-    flows = lib.generate_schedule(fake)
+    schedule = lib.generate_schedule(
+        min_initial_datasets=2,
+        max_initial_datasets=2,
+        max_initial_jobs_per_flow=2,
+        max_end_jobs_per_flow=2,
+        min_flows=1,
+        max_flows=1
+    )
+    assert {
+        flow_name: {
+            **flow.__dict__, **{'jobs': {job_name: job.__dict__ for job_name, job in flow.jobs.items()}}
+        } for flow_name, flow in schedule.items()} == {
+            'wretched-object': {
+                'frequency': '23h',
+                'monitoring': lib.Monitoring.OFF,
+                'owner': 'few-size@example.com',
+                'slo': '23h',
+                'jobs': {
+                    'goofy-forever': {
+                        'executable': 'jobs/goofy-forever.py',
+                        'inputs': {'/data/aspiring/brawny/cloud'},
+                        'output': '/data/ethereal/item/goofy_forever',
+                        'resource_class': 'xxlarge'
+                    },
+                    'annoyed-morning': {
+                        'executable': 'jobs/annoyed-morning.py',
+                        'inputs': {'/data/ethereal/item/goofy_forever'},
+                        'output': '/data/pricey/appearance/annoyed_morning',
+                        'resource_class': 'large'
+                    },
+                    'eager-confidence': {
+                        'executable': 'jobs/eager-confidence.py',
+                        'inputs': {'/data/ethereal/item/goofy_forever'},
+                        'output': '/data/tense/protection/eager_confidence',
+                        'resource_class': 'medium'
+                    },
+                    'load-annoyed-morning': {
+                        'executable': 'jobs/load-annoyed-morning.py',
+                        'inputs': {'/data/pricey/appearance/annoyed_morning'},
+                        'output': 'scheme.annoyed-morning@database',
+                        'resource_class': 'medium'
+                    },
+                    'load-eager-confidence': {
+                        'executable': 'jobs/load-eager-confidence.py',
+                        'inputs': {'/data/tense/protection/eager_confidence'},
+                        'output': 'scheme.eager-confidence@database',
+                        'resource_class': 'xxlarge'
+                    }
+                }
+            }
+        }
+
+
+def test_generate_schedule_large():
+    flows = lib.generate_schedule()
 
     # Does this flow exist?
     assert 'non' in flows

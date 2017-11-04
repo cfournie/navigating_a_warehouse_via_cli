@@ -17,3 +17,5 @@ pytest = "*"
 
 pyyaml = "*"
 faker = "*"
+codenamize = "*"
+"e1839a8" = {path = ".", editable = true}

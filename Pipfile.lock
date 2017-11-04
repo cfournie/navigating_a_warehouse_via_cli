@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9e896de9e5f44754d810c653a18d968fa73944eeaf25dd63441dc23e671e7da9"
+            "sha256": "cf438b01b7cec122d64b60599d4b922c9d298ea0502905aa72472999837332e4"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -27,6 +27,16 @@
         ]
     },
     "default": {
+        "codenamize": {
+            "hashes": [
+                "sha256:495e87c048a70bc99bfde38571773e20a22d88b6a8f7e4d6eb4463bfba783d9c"
+            ],
+            "version": "==1.2.2"
+        },
+        "e1839a8": {
+            "editable": true,
+            "path": "."
+        },
         "faker": {
             "hashes": [
                 "sha256:f2d7f4b0956bd610645aa7c62ae6a30fc323936b6298e521847410509236f389",
@@ -81,6 +91,13 @@
                 "sha256:1943a4bfb52f2b5068c8da25cdcfcf28c64c41d891dff70c662927c18ac58052"
             ],
             "version": "==1.0"
+        },
+        "wheel": {
+            "hashes": [
+                "sha256:e721e53864f084f956f40f96124a74da0631ac13fbbd1ba99e8e2b5e9cafdf64",
+                "sha256:9515fe0a94e823fd90b08d22de45d7bde57c90edce705b22f5e1ecf7e1b653c8"
+            ],
+            "version": "==0.30.0"
         }
     },
     "develop": {
@@ -103,7 +120,7 @@
             "hashes": [
                 "sha256:5308b47021bc2340965c371f0f058cc6971a04502638d4244225c49d80db273a"
             ],
-            "markers": "python_version < '3.2'",
+            "markers": "python_version == '2.7'",
             "version": "==3.5.0"
         },
         "enum34": {
