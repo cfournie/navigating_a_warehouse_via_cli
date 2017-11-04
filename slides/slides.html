@@ -50,7 +50,10 @@ class: center, middle
 
 
 <div class="footer"><code>https://github.com/cfournie/navigating_a_warehouse_via_cli</code></div>
+
+
 ---
+
 
 # Navigating a Data Warehouse via CLI
 
@@ -118,8 +121,10 @@ Sources:
 https://www.slideshare.net/SolmazShahalizadeh/building-a-financial-data-warehouse-a-lesson-in-empathy
 https://s2.q4cdn.com/024715446/files/doc_presentations/2017/11/Investor-Deck-Q3-2017.pdf
 
+
 ---
 class: center, middle
+
 
 ## Batch jobs
 
@@ -144,9 +149,11 @@ We predominantly run ETL batch jobs that:
 
 These batch jobs are written mostly in Python by our analysts (with the help of our engineers).  The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
 
+
 ---
 
-<h2>Development speed</h2>
+
+## Development speed
 
 .center[
 <span style="float:left;">
@@ -190,6 +197,7 @@ One way that we navigate our jobs is through a Django app called Hue. It's a ver
 
 ---
 
+
 background-image: url(./hue_logs.png)
 background-position: center;
 background-repeat: no-repeat;
@@ -213,6 +221,7 @@ And can also show lists of jobs that are completed or being run by our scheduler
 One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or metadata (like the where it reads/writes, which team maintains it, etc.).
 
 So how can we get around that?
+
 
 ---
 
@@ -251,24 +260,55 @@ order-transaction-states-incremental:
 
 Well we store the definition of our schedule in a YAML file in our git repository, and the version that we have in our master branch is at most 20 minutes newer than what could be running in our production environment, so it's a pretty good analogue for production.
 
-We can open the YAML files, look around, for example this is the set of GMV jobs (or GMV flow) that I showed you earlier: this group of jobs has a team that owns it, it runs every 2h, shouldn't be more than 4h behind, it has two extraction jobs, one job that reads the raw extracted data and outputs a dataset describing GMV, and another that loads that dataset into a database.
+We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this group of jobs has a team that owns it, it runs every 2h, shouldn't be more than 4h behind, it has an extraction job that produces raw dara, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.
 
-With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on what's in the file like how many jobs use "xxlarge" resources or how many jobs do we have in total.
+With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
 
-But except for finding specific jobs details and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when alayzing classes of failures, we can to be able to break down that list so that we can better understand which jobs are impacted by an issue. We need a table and the ability to filter by various job properties.
+But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when alayzing classes of failures, we'd like to be able to break down that list by various job metadata so that we can better understand which jobs are impacted by an issue.
 
-We can't get that from YAML. We can't easily break down our list of jobs by the resources that they use, their inputs or outputs, or even any of properties of the implementations themselves. They're implemented in Python using declarative APIs, if we instantiated those modules we could learn about even about how they're set up and what they do.
-
-Thankfully, since we use this YAML file to specify out schedule, but we still need to interpret it and send changes to it to our scheduler, Oozie, we already have a set of Python APIs to parse and iterate over it. So we create this table using Python.
 
 ---
 
 
-## Parse and print jobs
+### Format YAML as a table
 
 .left[
+Job                     | Resources &nbsp;   | Executable | Etc.
+----------------------- | -------------- | -----------
+cuddly-two              | large    | jobs/cuddly-two.py | ...
+load-cuddly-two         | xxlarge  | jobs/load-cuddly-two.py
+untidy-enthusiasm       | small    | jobs/untidy-enthusiasm.py
+load-untidy-enthusiasm  | large    | jobs/load-untidy-enthusiasm.py
+first-restaurant        | small    | jobs/first-restaurant.py
+load-first-restaurant   | small    | jobs/load-first-restaurant.py
+jazzy-comfortable       | xxlarge  | jobs/jazzy-comfortable.py
+load-jazzy-comfortable  | medium   | jobs/load-jazzy-comfortable.py
+annoyed-morning         | xxlarge  | jobs/annoyed-morning.py
+ubiquitous-emphasis     | large    | jobs/ubiquitous-emphasis.py
+]
+
+<br><br><br>
+
+
+???
+
+We this YAML data layed out in  a table, and we need the ability to filter by columns.
+
+We can't get that directly from the YAML itself. We also can't get any of properties of the implementations themselves. They're implemented in Python using declarative APIs, and if we instantiated those modules we could learn even more about how they're set up and what they do.
+
+So we can't get this data directly from the YAML, but thankfully we already have libraries that parse this YAML to update our scheduler, Oozie. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create this table using a Python script!
+
+
+---
+
+
+### Parse and print jobs
+
+.left[
+
 ```python
 flows = lib.generate_schedule()
+
 for flow in flows.values():
     for name, job in flow.jobs.items():
         print(
@@ -284,16 +324,43 @@ for flow in flows.values():
 
 ???
 
-So let's script this! To get some more analytical power, let's read this schedule and compose a table of all of our flows (to start) and just print the output.
+So let's script this! Let's keep it simple and just read this schedule and to compose a table let's just print eveything we know about each job on one line.
+
+What does this look like?
+
+RUN python scripts/jobs1.py
+
+Garbage.
 
 
 ---
 
-## Solution 2
 
-Output a table of jobs.
+## What when wrong?
+
+*Whitespace* was a mess
+
+Jobs have a *variable number of inputs*
+
+
+
+???
+
+What went wrong?
+
+Well there was a lot of output.
+
+Whitespace was a mess, we couldn't tell where the columns were.
+
+Jobs also have multiple inputs, so we're basically cramming an array of inputs into one cell in this table. Not great.
+
+So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI.
+
+RUN python scripts/jobs2.py | column -t
+
  
 ---
+
 
 ## Which jobs use xxlarge resources?
 
