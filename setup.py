@@ -12,7 +12,8 @@ import setuptools
 
 # Package meta-data.
 NAME = 'navigate_warehouse_via_cli'
-DESCRIPTION = 'Library and slides for a presentation titled "Navigating a Data Warehouse via CLI"'
+DESCRIPTION = 'Library and slides for a presentation titled "Navigating a Data \
+Warehouse via CLI"'
 URL = 'https://github.com/cfournie/navigating_a_warehouse_via_cli'
 EMAIL = 'chris.m.fournier@gmail.com'
 AUTHOR = 'Chris Fournier'

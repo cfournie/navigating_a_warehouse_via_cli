@@ -10,7 +10,9 @@ def random_seed():
     random.seed(2)
 
 
-pytestmark = pytest.mark.usefixtures("random_seed")  # pylint: disable=global-variable,invalid-name
+pytestmark = (  # pylint: disable=global-variable,invalid-name
+    pytest.mark.usefixtures("random_seed")
+)
 
 
 def test_create_path():
