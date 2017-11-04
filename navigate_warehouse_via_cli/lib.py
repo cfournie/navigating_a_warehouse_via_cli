@@ -14,6 +14,14 @@ class Monitoring(enum.Enum):
     ACTIVE = 'active'
 
 
+class ResourceClass(enum.Enum):
+    SMALL = 'small'
+    MEDIUM = 'medium'
+    LARGE = 'large'
+    XLARGE = 'xlarge'
+    XXLARGE = 'xxlarge'
+
+
 class Job(object):
 
     def __init__(self, resource_class, executable, inputs, output):
@@ -57,7 +65,7 @@ def generate_job(name, potential_inputs, output=None):
     ))
 
     return Job(
-        resource_class=random.choice(['small', 'medium', 'large', 'xlarge', 'xxlarge']),
+        resource_class=random.choice(list(ResourceClass)),
         executable=os.path.join('jobs', name + '.py'),
         inputs=inputs,
         output=output
@@ -65,7 +73,6 @@ def generate_job(name, potential_inputs, output=None):
 
 
 def generate_schedule(
-        random_seed=2,
         min_initial_datasets=10,
         max_initial_datasets=30,
         max_initial_jobs_per_flow=3,

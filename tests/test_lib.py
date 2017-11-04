@@ -1,6 +1,6 @@
 import random
+import re
 
-import faker
 import navigate_warehouse_via_cli.lib as lib
 import pytest
 
@@ -43,74 +43,46 @@ def test_generate_job():
 
 
 def test_generate_schedule():
-    schedule = lib.generate_schedule(
-        min_initial_datasets=2,
-        max_initial_datasets=2,
-        max_initial_jobs_per_flow=2,
-        max_end_jobs_per_flow=2,
-        min_flows=1,
-        max_flows=1
-    )
-    assert {
-        flow_name: {
-            **flow.__dict__, **{'jobs': {job_name: job.__dict__ for job_name, job in flow.jobs.items()}}
-        } for flow_name, flow in schedule.items()} == {
-            'wretched-object': {
-                'frequency': '23h',
-                'monitoring': lib.Monitoring.OFF,
-                'owner': 'few-size@example.com',
-                'slo': '23h',
-                'jobs': {
-                    'goofy-forever': {
-                        'executable': 'jobs/goofy-forever.py',
-                        'inputs': {'/data/aspiring/brawny/cloud'},
-                        'output': '/data/ethereal/item/goofy_forever',
-                        'resource_class': 'xxlarge'
-                    },
-                    'annoyed-morning': {
-                        'executable': 'jobs/annoyed-morning.py',
-                        'inputs': {'/data/ethereal/item/goofy_forever'},
-                        'output': '/data/pricey/appearance/annoyed_morning',
-                        'resource_class': 'large'
-                    },
-                    'eager-confidence': {
-                        'executable': 'jobs/eager-confidence.py',
-                        'inputs': {'/data/ethereal/item/goofy_forever'},
-                        'output': '/data/tense/protection/eager_confidence',
-                        'resource_class': 'medium'
-                    },
-                    'load-annoyed-morning': {
-                        'executable': 'jobs/load-annoyed-morning.py',
-                        'inputs': {'/data/pricey/appearance/annoyed_morning'},
-                        'output': 'scheme.annoyed-morning@database',
-                        'resource_class': 'medium'
-                    },
-                    'load-eager-confidence': {
-                        'executable': 'jobs/load-eager-confidence.py',
-                        'inputs': {'/data/tense/protection/eager_confidence'},
-                        'output': 'scheme.eager-confidence@database',
-                        'resource_class': 'xxlarge'
-                    }
-                }
-            }
-        }
-
-
-def test_generate_schedule_large():
     flows = lib.generate_schedule()
 
-    # Does this flow exist?
-    assert 'non' in flows
+    # Pick a flow
+    flow = random.choice(list(flows.values()))
 
-    # Does this job exist?
-    assert 'facilis' in flows['non'].jobs
+    # Does this flow have reasonable values?
+    assert isinstance(flow.monitoring, lib.Monitoring)
+    assert re.match('[a-z\-]+@example.com', flow.owner)
+    assert re.match('[0-9]+h', flow.frequency)
+    assert re.match('[0-9]+h', flow.slo)
+    assert len(flow.jobs)
 
-    # Does this job have sensible dependencies and other values?
-    assert set(flows['non'].jobs['facilis'].dependencies) < set(flows['non'].jobs.keys())
-    assert flows['non'].jobs['facilis'].command_options
-    assert flows['non'].jobs['facilis'].executable
-    assert flows['non'].jobs['facilis'].resource_class
+    def assert_job(job):
+        assert isinstance(job.resource_class, lib.ResourceClass)
+        assert job.executable.endswith('.py')
+        assert job.inputs
+        assert job.output
     
-    # Does this subflow exist and doesit refer to a real flow?
-    assert 'ad' in flows['non'].jobs
-    assert flows['non'].jobs['ad'].name in flows
+    # Find a load job
+    load_job = [job for job_name, job in flow.jobs.items() if job_name.startswith('load-')][0]
+
+    # Does this load job have reasonable values?
+    assert_job(load_job)
+    assert re.match('scheme\.[a-z\-]+@database', load_job.output)
+
+    # Find the 'end' job that created the input for this load job
+    end_job = [job for job in flow.jobs.values() if job.output in load_job.inputs]
+    assert len(end_job) == 1
+    end_job = end_job[0]
+ 
+    # Does this 'end' job have reasonable values?
+    assert_job(end_job)
+
+    # Find the 'initial' job that created the input for this 'end' job
+    initial_job = [job for job in flow.jobs.values() if job.output in end_job.inputs]
+    assert len(initial_job) == 1
+    initial_job = initial_job[0]
+    
+    # Does this 'intitial' job have reasonable values?
+    assert_job(initial_job)
+
+    # Does this initial job use any other job in this flow's output? (if so it's not an 'initial' job)
+    assert not initial_job.inputs & set(job.output for job in flow.jobs.values())
