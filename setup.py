@@ -23,6 +23,17 @@ REQUIRED = [
     'pyyaml', 'faker', 'codenamize',
 ]
 
+EXTRAS = {
+    'dev': [
+        'setuptools>=34.3',
+        'pycodestyle==2.3.1',
+        'pytest==3.0.6',
+        'pytest-randomly==1.1.2',
+        'pylint==1.7.1',
+        'shopify_python==0.4.3'
+    ]
+}
+
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
 # Except, perhaps the License and Trove Classifiers!
@@ -85,6 +96,7 @@ setup(
     url=URL,
     py_modules=['navigate_warehouse_via_cli'],
     install_requires=REQUIRED,
+    extras_require=EXTRAS,
     include_package_data=True,
     license='MIT',
     classifiers=[
