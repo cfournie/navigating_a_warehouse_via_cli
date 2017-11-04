@@ -1,11 +1,9 @@
-python_files := find . -path '*/.*' -prune -o -name '*.py' -print0
-
 install:
 	pip install -e .[dev]
 
 autopep8:
 	@echo 'Auto Formatting...'
-	@$(python_files) | xargs -0 autopep8 --jobs 0 --in-place --aggressive --global-config setup.cfg
+	@autopep8 --in-place --aggressive --global-config setup.cfg **/*.py scripts/*
 
 lint:
 	@echo 'Linting...'

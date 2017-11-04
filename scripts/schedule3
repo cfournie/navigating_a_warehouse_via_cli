@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     def handle_none(value):
         return value if value else 'NA'
-    
+
     for flow_name, flow in flows.items():
         for job_name, job in flow.jobs.items():
             for _input in job.inputs:
@@ -36,4 +36,3 @@ if __name__ == '__main__':
                     _input,
                     job.output
                 )))
-
