@@ -10,7 +10,7 @@ autopep8:
 lint:
 	@echo 'Linting...'
 	@pylint --rcfile=pylintrc setup.py navigate_warehouse_via_cli tests scripts
-	@pycodestyle
+	@pycodestyle .
 
 autolint: autopep8 lint
 

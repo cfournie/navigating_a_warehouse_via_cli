@@ -1,10 +1,8 @@
 import enum
-import itertools
 import os
 import random
 import sys
 
-import yaml
 import codenamize
 
 
@@ -23,6 +21,7 @@ class ResourceClass(enum.Enum):
 
 
 class Job(object):
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, resource_class, executable, inputs, output):
         self.resource_class = resource_class
@@ -32,8 +31,10 @@ class Job(object):
 
 
 class Flow(object):
+    # pylint: disable=too-few-public-methods
 
-    def __init__(self, owner, monitoring=None, frequency=None, slo=None, jobs=None):
+    def __init__(self, owner, monitoring=None,
+                 frequency=None, slo=None, jobs=None):
         self.monitoring = monitoring if monitoring else Monitoring.OFF
         self.owner = owner
         self.frequency = frequency
@@ -41,8 +42,8 @@ class Flow(object):
         self.jobs = jobs
 
 
-def randint(a=0, b=sys.maxsize):
-    return random.randint(a, b)
+def randint(low=0, high=sys.maxsize):
+    return random.randint(low, high)
 
 
 def create_path(end=None):
@@ -79,10 +80,15 @@ def generate_schedule(
         max_end_jobs_per_flow=4,
         min_flows=50,
         max_flows=100):
-    datasets = set(create_path() for _ in range(0, randint(min_initial_datasets, max_initial_datasets)))
+    datasets = set(
+        create_path() for _ in range(
+            0,
+            randint(
+                min_initial_datasets,
+                max_initial_datasets)))
     owners = ['%s@example.com' % create_name() for _ in range(randint(5, 10))]
-             
-    def generate_flow(potential_subflows):
+
+    def generate_flow():
         initial_jobs = dict()
         initial_datasets = set()
         jobs = dict()
@@ -94,9 +100,11 @@ def generate_schedule(
             initial_jobs[name] = job
             initial_datasets.add(job.output)
 
-        # Generate pairs of jobs that accept flow inputs (one job and an associated loader)
+        # Generate pairs of jobs that accept flow inputs (one job and an
+        # associated loader)
         datasets_used = set()
-        for last in map(lambda i: i == 0, reversed(range(randint(0, max_end_jobs_per_flow)))):
+        for last in map(lambda i: i == 0, reversed(
+                range(randint(0, max_end_jobs_per_flow)))):
             # Job that accepts flow dataset inputs
             name = create_name()
             job = generate_job(name, potential_inputs=initial_datasets)
@@ -118,7 +126,7 @@ def generate_schedule(
             jobs['load-' + name] = loader
 
         jobs.update(initial_jobs)
-            
+
         slo = randint(0, 24)
         frequency = randint(slo, 24) if slo else None
         return Flow(
@@ -131,5 +139,5 @@ def generate_schedule(
 
     flows = dict()
     for _ in range(0, randint(min_flows, max_flows)):
-        flows[create_name()] = generate_flow(list(flows.keys()))
+        flows[create_name()] = generate_flow()
     return flows
