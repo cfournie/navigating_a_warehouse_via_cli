@@ -14,6 +14,7 @@
       .remark-slide-content {
         background-color: #223274;
         color: #FFFFFF;
+        background-size: auto 100%;
       }
 
       .remark-slide-container {
@@ -56,21 +57,41 @@ Chris Fournier (@cfournie)
 
 ???
 
-Hi, I'm Chris Fournier. I work on one of the engineering teams at Shopify that maintains our data warehouse.
+Hi, I'm Chris Fournier and I work at Shopify.
 
-In case you haven't heard about Shopify, we try to make commerce accessible and better for everyone, and one way that we do that is by hosting online stores for our merchants and our team specifically helps them receive accurate and timely data on all of the ways that they sell their products. A large part of how we do that is using our data warehouse.
+In case you haven't heard of us...
+
 
 ---
 
-## What is a *data warehouse*?
+
+background-image: url(./frontpage.png)
+background-position: center;
+background-repeat: no-repeat;
 
 ???
 
-But what is a data warehouse?
+... we provide a platform for people to sell products online or in person.
 
-Really it's just a repository of data that we've collected from operational systems (like online stores) that has been transformed in a way that makes it easy to answer various questions about a topic of interest and loaded into systems that make it easy to query this data.
 
 ---
+
+
+## Data Warehouse
+
+*Platform* to collect, store, analyze, and report on *data*
+
+
+???
+
+The specific team that I work on develops software for and maintains a data warehouse, or in other words a platform used to collect, store, analyze, and report on data outside of your web app or other operational systems.
+
+
+Our anaylsts us it to answer questions about the performance of Shopify as a business, our products, and our features.
+
+
+---
+
 
 ## GMV
 
@@ -78,11 +99,20 @@ Really it's just a repository of data that we've collected from operational syst
 
 ???
 
-One example of a question that we try to answer for Shopify as a whole is how much has been sold through our platform? We call that gross merchandise value (or GMV) and that's one of the metrics that we use as a company to gauge our health (in addition to the number merchants, etc.).
+One example of a question that we try to answer for Shopify as a whole is:
 
-This is not trivial calculate given the volume of orders and transactions that we process, differing currencies, chargebacks that can occur months later, etc. This could be a talk or two on its own.
+"What is the total value of everything that has been sold through our platform?"
 
-How do we calculate this and make it accessible to the rest of the business?
+We call that gross merchandise value (or GMV) and that's one of the metrics that we use as a company to gauge our success.
+
+This is not a trivial number to calculate given the volume of orders and transactions that we process and the analysis that we do to break this number down by payment gateway, industry, monthly recurring revenue, etc. We're also continuously processing data to keep these numbers up to date.
+
+But from a broad techincal perspective, how do we make this dataset?
+
+
+Sources:
+https://www.slideshare.net/SolmazShahalizadeh/building-a-financial-data-warehouse-a-lesson-in-empathy
+https://s2.q4cdn.com/024715446/files/doc_presentations/2017/11/Investor-Deck-Q3-2017.pdf
 
 ---
 class: center, middle
@@ -93,21 +123,21 @@ class: center, middle
 
 <div class="mermaid">
 graph LR
-    A(Extract orders)-->C(Compute GMV)
-    B(Extract transactions)-->C
-    C-->D(Load GMV to Database)
+    A(Extract<br>orders)-- raw orders -->C(Transform into<br>GMV per shop)
+    B(Extract<br>transactions)-- raw transactions -->C
+    C-- GMV per shop -->D(Load to<br>a Database)
 </div>
 
 <br><br><br>
 
 
 ???
-We predominantly run jobs that:
-  - Extract batches of data from operational systems
-  - Transform it into facts that we care about, and
-  - Load those facts to a database for analysts to create reports upon
+We predominantly run ETL batch jobs that:
+  - Extract batches of data from operational systems (like MySQL) and stores it elsewhere (for example as a dataset called "raw orders")
+  - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
+  - Load that dataset into a database for analysts to issue queries against and create reports upon
 
-These batch jobs themselves are organized into groups of jobs that we refer to as "flows", and both the implementations and data dependencies between these jobs change frequently. How freuqntly?
+These batch jobs are written mostly in Python by our analysts (with the help of our engineers).  The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
 
 ---
 
@@ -131,35 +161,63 @@ Deploys per day in 2017 on<br>average (±8.6 std dev)
 
 We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
 
-Suffice to say, there are a lot of these jobs and they change often. In engineering it's our job to help our analysts keep these jobs running reliably, and to do so we need to be able to navaigate this ever-changing set of jobs and their implementations.
+The engineering team that I work on not only maintains the platform that these jobs are developed and run on, but also helps our analysts keep these jobs running reliably.
+
+To help make sure that these jobs are working, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
 
 How do we do that?
 
+
 ---
 
-## Hue
 
-<img src="./hue.png" width="90%">
+background-image: url(./hue_workflow.png)
+background-position: center;
+background-repeat: no-repeat;
+
 
 ???
 
-One way that we navigate our jobs is through a user interaface called Hue. It's a very handy way to visualize flows (our groups of jobs) and jobs themselves.
+One way that we navigate our jobs is through a Django app called Hue. It's a very handy way to visualize groups of jobs (which we refer to as flows) and the jobs themselves.
 
-We use Oozie as our scheduler and YARN as our resource manage, and Hue gives us a window into both the logs that our jobs produce and tries to visualize our list of flows and jobs, but it was not meant for the number of jobs that we run; its renders UI sluggishly and search occurs only within the current page, not through all results.
 
-It's biggest limitation is that we can only actually search by a flow's name, and not by any of its otehr metadata (e.g. the job names within it, where it reads/writes, what type, etc.).
+---
+
+background-image: url(./hue_logs.png)
+background-position: center;
+background-repeat: no-repeat;
+
+???
+
+It can even stream job logs for us.
+
 
 ---
 
 
+background-image: url(./hue_workflows.png)
+background-position: center;
+background-repeat: no-repeat;
+
+???
+
+And can also show lists of jobs that are completed or being run by our scheduler, Oozie.
+
+One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or metadata (like the where it reads/writes, which team maintains it, etc.).
+
+So how can we get around that?
+
+---
+
        
-# YAML?
+### Search YAML flow and job definitions
 
 .left[
 ```yaml
 order-transaction-states-incremental:
-  monitoring: active
   owner: team@example.com
+  frequency: 2h
+  service-level-objective: 4h
 
   extract-orders:
     executable: jobs/extract_orders.py
@@ -187,83 +245,25 @@ order-transaction-states-incremental:
 
 ???
 
-Can open YAML file and look around. Can use editor find tools. Can use regex and get counts.
+Well we store the definition of our schedule in a YAML file in our git repository, and the version that we have in our master branch is at most 20 minutes newer than what could be running in our production environment, so it's a pretty good analogue for production.
 
-Is there a way that we can do this without an editor, and maybe get more analytical power?
+We can open the YAML files, look around, for example this is the set of GMV jobs (or GMV flow) that I showed you earlier: this group of jobs has a team that owns it, it runs every 2h, shouldn't be more than 4h behind, it has two extraction jobs, one job that reads the raw extracted data and outputs a dataset describing GMV, and another that loads that dataset into a database.
 
-Yes, we have a lot of the same tools already available on Unix from your terminal.
+With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on what's in the file like how many jobs use "xxlarge" resources or how many jobs do we have in total.
 
----
+But except for finding specific jobs details and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when alayzing classes of failures, we can to be able to break down that list so that we can better understand which jobs are impacted by an issue. We need a table and the ability to filter by various job properties.
 
-## `grep` YAML
+We can't get that from YAML. We can't easily break down our list of jobs by the resources that they use, their inputs or outputs, or even any of properties of the implementations themselves. They're implemented in Python using declarative APIs, if we instantiated those modules we could learn about even about how they're set up and what they do.
 
-#### *Which* jobs use `xxlarge` resources?
-.left[
-```shell
-user@host$ grep xxlarge -B3 schedule.yml
-  compute-gmv:
-    resource_class: xxlarge
-```
-]
-
-#### *What* are the names of our flows?
-.left[
-```shell
-user@host$ grep "^[a-z\-]\{1,\}:" schedule.yml
-line-item-facts:
-customer-orders-dimension:
-parts-suppliers-dimension:
-order-transaction-states-incremental:
-```
-]
-
-#### *How many* jobs use `xxlarge` resources? Or how many flows are there?
-
-<br><br>
+Thankfully, since we use this YAML file to specify out schedule, but we still need to interpret it and send changes to it to our scheduler, Oozie, we already have a set of Python APIs to parse and iterate over it. So we create this table using Python.
 
 ---
 
-## Pipes
 
-TODO explain pipes
+## Flows
 
-#### *How many* jobs use `xxlarge` resources?
 
 .left[
-```shell
-user@host$ grep xxlarge schedule.yml | wc -l
-       2
-```
-]
-
-#### *How many* flows are there?
-
-.left[
-```shell
-user@host$ grep "^[a-z\-]\{1,\}:" schedule.yml | wc -l
-       4
-```
-]
-
-<br><br>
-
----
-
-## Problem
-
-How do we handle inferred values (e.g. resource_class default)
-How do we view multiple attributes of a flow/job?
-
----
-
-## Solution
-
-Python script! Output a table of flows.
-
-.left[
-```python
-#!/usr/bin/env python
-```
 ```python
 import lib
 
@@ -273,7 +273,18 @@ if __name__ == '__main__':
         print(flow_name, flow.owner, flow.frequency, flow.slo)
 
 ```
+
+```shell
+user@host$ python flows.py
+
+```
 ]
+
+
+???
+
+So let's script this! To get some more analytical power, let's read this schedule and compose a table of all of our flows (to start) and just print the output.
+
 
 ---
 
