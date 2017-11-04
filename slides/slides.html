@@ -16,7 +16,6 @@
         color: #FFFFFF;
         background-size: auto 100%;
       }
-
       .remark-slide-container {
       visibility: hidden;
           display: initial;
@@ -24,16 +23,20 @@
       .remark-visible {
           visibility: visible;
       }
-  
       em {
         color: #fb8b8a;
         font-style:normal;
       }
-
       .statistic {
         font-size: 85pt;
         font-weight: bold;
         color: #44bebf;
+      }
+      .footer {
+        position: absolute;
+        bottom: 12px;
+        left: 20px;
+        opacity: .5;
       }
     </style>
 
@@ -45,6 +48,8 @@
 layout: true
 class: center, middle
 
+
+<div class="footer"><code>https://github.com/cfournie/navigating_a_warehouse_via_cli</code></div>
 ---
 
 # Navigating a Data Warehouse via CLI
@@ -81,7 +86,6 @@ background-repeat: no-repeat;
 
 *Platform* to collect, store, analyze, and report on *data*
 
-
 ???
 
 The specific team that I work on develops software for and maintains a data warehouse, or in other words a platform used to collect, store, analyze, and report on data outside of your web app or other operational systems.
@@ -93,9 +97,9 @@ Our anaylsts us it to answer questions about the performance of Shopify as a bus
 ---
 
 
-## GMV
+### GMV
 
-<img src="./gmv.png" height="500pt" />
+<img src="./gmv.png" height="480pt" />
 
 ???
 
@@ -132,6 +136,7 @@ graph LR
 
 
 ???
+
 We predominantly run ETL batch jobs that:
   - Extract batches of data from operational systems (like MySQL) and stores it elsewhere (for example as a dataset called "raw orders")
   - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
@@ -141,8 +146,9 @@ These batch jobs are written mostly in Python by our analysts (with the help of 
 
 ---
 
-## Development speed
+<h2>Development speed</h2>
 
+.center[
 <span style="float:left;">
 <span class="statistic">1100+</span><br>
 ETL job implementations<br>(as of Nov 1017)
@@ -152,9 +158,10 @@ ETL job implementations<br>(as of Nov 1017)
 <span class="statistic">15.2</span><br>
 Deploys per day in 2017 on<br>average (±8.6 std dev)
 </span>
+]
 
+<br><br><br><br><br><br><br><br><br><br><br>
 
-<br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
 
 ???
@@ -413,7 +420,7 @@ Need to join!
         slideNumberFormat: 'Slide %current% of %total%',
         // .. or by using a format function
         slideNumberFormat: function (current, total) {
-          return 'Slide ' + current + ' of ' + total;
+          return current + ' of ' + total;
         },
 
         // Enable or disable counting of incremental slides in the slide counting
