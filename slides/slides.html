@@ -231,10 +231,7 @@ order-transaction-states-incremental:
     inputs: ['orders@database']
     output: /data/raw/orders/
 
-  extract-transactions:
-    executable: jobs/extract_transactions.py
-    inputs: ['transactions@database']
-    output: /data/raw/transactions/
+  ...
 
   compute-gmv:
     resource_class: xxlarge
