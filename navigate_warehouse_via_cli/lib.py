@@ -79,7 +79,11 @@ def generate_schedule(
         max_initial_jobs_per_flow=3,
         max_end_jobs_per_flow=4,
         min_flows=50,
-        max_flows=100):
+        max_flows=100,
+        seed=None):
+    if seed:
+        random.seed(seed)
+
     datasets = set(
         create_path() for _ in range(
             0,

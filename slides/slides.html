@@ -260,23 +260,20 @@ Thankfully, since we use this YAML file to specify out schedule, but we still ne
 ---
 
 
-## Flows
-
+## Parse and print jobs
 
 .left[
 ```python
-import lib
-
-if __name__ == '__main__':
-    flows = lib.generate_schedule()
-    for flow_name, flow in flows.items():
-        print(flow_name, flow.owner, flow.frequency, flow.slo)
-
-```
-
-```shell
-user@host$ python flows.py
-
+flows = lib.generate_schedule()
+for flow in flows.values():
+    for name, job in flow.jobs.items():
+        print(
+            name,
+            job.resource_class.value,
+            job.executable,
+            job.inputs,
+            job.output
+        )
 ```
 ]
 
