@@ -328,7 +328,13 @@ So let's script this! Let's keep it simple and just read this schedule and to co
 
 What does this look like?
 
-RUN python scripts/jobs1.py
+
+---
+
+
+`python scripts/jobs1.py`
+
+???
 
 Garbage.
 
@@ -336,11 +342,10 @@ Garbage.
 ---
 
 
-## What when wrong?
 
-*Whitespace* was a mess
+### *Whitespace* was a mess.
 
-Jobs have a *variable number of inputs*
+### Jobs have a *variable* number of inputs.
 
 
 
@@ -356,83 +361,101 @@ Jobs also have multiple inputs, so we're basically cramming an array of inputs i
 
 So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI.
 
+
+---
+
+
+
 RUN python scripts/jobs2.py | column -t
 
  
 ---
 
 
-## Which jobs use xxlarge resources?
+### `python scripts/jobs2.py | column -t`
 
-`awk`
+???
 
----
+What did I just do there? Two things:
 
-## Just the names of xxlarge resource jobs
+1. I removed our variable input column
+2. I piped the output the Python script to another program called "column" and asked it to format the output into a table
 
-`cut`
+What what is piping magic you might ask?
 
----
-
-## Names and implementations
-
-`cut`, `column -t`
-
----
-
-## Which jobs have no implementation?
-
-`awk` for "NA"
+This is some of the magic that Linux/BSD/OSX can provide you so that you can combine your simple script with many other UNIX tools to create some truly fantastic output.
 
 
 ---
 
-## Denormalized data
 
-Show flow and job data together
+### `python scripts/jobs2.py | column -t`
+<br>
+.left[
+### 1. Call *`pipe(2)`* to create a file (e.g. `pipe:a`)
+### 2. *Fork* twice (for `python` and `column`)
+### 3. Set `python`'s *`stdout`* to *`pipe:a` write* end
+### 4. Set `column`'s *`stdin`* to *`pipe:a` read* end
+### 5. Run `python` & `column` roughly *in parallel*
+]
+
+???
+
+Roughly how this works is:
+1. Bash will create a special in-memory pipe file in the pipe filesystem
+2. Bash will then fork twice to create two child processes, one for python and one for column
+3. Bash will set python's stdout (a file descriptor where it writes output to during print) to the write end of the pipe file
+4. Bash will set column's stdin (a file descriptor where it reads input from) to the read end of that same pipe file
+5. Bash then starts both processes in parrallel and they write and read from the pipe file until they're finished.
+
+So we can make a super simple Python script and let bash and other unix programs massage our output into our desired form, and we get to spread this work over multiple cores.
+
+That's awesome.
+
+Let's take this further!
+
+
+---
+
+
+RUN python scripts/jobs3.py | cut -f1 -f2 | column -t
+
+???
+Let's change our python program a little and output tab separators instead of spaces. Why?
+Because a lot of the unix tools assume that fields i.e. columns are tab-separated.
+
+Once we do that, let's use a program called `cut` AND `column` to show a table of just job names and their resource class.
+
 
 ---
 
 
-## Dataset graph
+RUN python scripts/jobs3.py | head | cut -f1 -f2 | column -t
+
+???
+
+That's sortof a long list though, let's try to show just the first few rows of the table using a program called `head`.
+
+Uh oh!
+
 
 ---
 
 
-## Flatten as input, output
+.left[
+```
+Traceback (most recent call last):
+  File "scripts/jobs3.py", line 13, in <module>
+    job.output
+BrokenPipeError: [Errno 32] Broken pipe
+```
+]
+
 
 ---
 
-## Flatten as input, downstream output, depth
 
----
 
-## Data poisioning uses
-
-Which jobs are downstream of other jobs that are of type X?
-
-List jobs of type X
-
-List dowstream of all jobs
-
-Need to join!
-
----
-
-## Join
-
----
-
-## Arbitrary Qs possible
-
----
-
-## Speed
-
-- Perception of speed (us generators and output each line as generated)
-- Profile using cprofile
-- Generate cols on demand
-- Cache output (invalidate on input changes)
 
 ---
 
