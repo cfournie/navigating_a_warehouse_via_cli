@@ -455,9 +455,20 @@ BrokenPipeError: [Errno 32] Broken pipe
 ---
 
 
+.left[
+```python
+import signal
+
+def handle_sigpipe(signum, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGPIPE, handle_sigpipe)
+```
+]
 
 
 ---
+
 
 ## Testing
 
