@@ -20,16 +20,16 @@ AUTHOR = 'Chris Fournier'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'pyyaml', 'faker', 'codenamize',
+    'codenamize>=1.2.2',
+    'setuptools>=34.3'
 ]
 
 EXTRAS = {
     'dev': [
-        'setuptools>=34.3',
         'pycodestyle==2.3.1',
+        'pylint==1.7.1',
         'pytest==3.0.6',
         'pytest-randomly==1.1.2',
-        'pylint==1.7.1',
         'shopify_python==0.4.3'
     ]
 }
