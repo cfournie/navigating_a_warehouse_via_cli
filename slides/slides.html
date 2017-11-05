@@ -293,12 +293,12 @@ So we can't get this data directly from the YAML, but thankfully we already have
 .left[
 
 ```python
-flows = lib.generate_schedule()
-
-for flow in flows.values():
-    for name, job in flow.jobs.items():
+for flow_name, flow in flows.items():
+    for job_name, job in flow.jobs.items():
         print(
-            name,
+            flow_name,
+            flow.frequency,
+            job_name,
             job.resource_class.value,
             job.executable,
             job.inputs,
@@ -311,6 +311,8 @@ for flow in flows.values():
 ???
 
 So let's script this! Let's keep it simple and just read this schedule and to compose a table let's just print eveything we know about each job on one line.
+
+Note that I'm printing the flow name and frequency once for each job. This is repeticious, and means that this is not a normalized table. Normally this would be bad table design, but to keep this simple, it will make filtering this table by a flow's properties to get job information a lot easier. Denormalized tables are your friend on the CLI.
 
 What does this look like?
 
@@ -343,7 +345,7 @@ Well there was a lot of output.
 
 Whitespace was a mess, we couldn't tell where the columns were.
 
-Jobs also have multiple inputs, so we're basically cramming an array of inputs into one cell in this table. Not great.
+Jobs also have multiple inputs, so we're basically cramming an array of inputs into one cell in this table. Not great. It's almost like having a variable number of columns.
 
 So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI.
 
@@ -404,13 +406,13 @@ Let's take this further!
 ---
 
 
-RUN python scripts/jobs3.py | cut -f1 -f2 | column -t
+RUN python scripts/jobs3.py | cut -f1 -f3 -f4 | column -t
 
 ???
 Let's change our python program a little and output tab separators instead of spaces. Why?
 Because a lot of the unix tools assume that fields i.e. columns are tab-separated.
 
-Once we do that, let's use a program called `cut` AND `column` to show a table of just job names and their resource class.
+Once we do that, let's use a program called `cut` AND `column` to show a table of just flow and job names and the resource class.
 
 `cut` can be used to say "give me only the first and second field (or column) in each row, and then we can pass just those two columns to the `column` program.
 
@@ -422,8 +424,8 @@ Once we do that, let's use a program called `cut` AND `column` to show a table o
 ```
 RUN python scripts/jobs3.py | wc -l
 RUN python scripts/jobs3.py | grep large | column -t
-RUN python scripts/jobs3.py | awk '$2 == "large"' | column -t
-RUN python scripts/jobs3.py | awk '$2 == "large"' | wc -l
+RUN python scripts/jobs3.py | awk '$4 == "large"' | column -t
+RUN python scripts/jobs3.py | awk '$4 == "large"' | wc -l
 RUN python scripts/jobs3.py | head
 ```
 ]
@@ -514,8 +516,8 @@ Now we're exception free, let's take a look at some more handy unix tools and th
 
 .left[
 ```
-RUN python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -n3 | head  # TODO requires flow freq
-RUN python scripts/jobs4.py | cut -f5 | sort | uniq
+RUN python scripts/jobs4.py | python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -k2n | head
+RUN python scripts/jobs4.py | cut -f4 | sort | uniq
 ```
 ]
 

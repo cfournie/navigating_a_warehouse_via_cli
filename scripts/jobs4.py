@@ -13,12 +13,14 @@ if __name__ == '__main__':
         sys.exit(0)
     signal.signal(signal.SIGPIPE, handle_sigpipe)
 
-    # Output jobs
+    # Write table to stdout
     flows = lib.generate_schedule(seed=2)
-    for flow in flows.values():
-        for name, job in flow.jobs.items():
+    for flow_name, flow in flows.items():
+        for job_name, job in flow.jobs.items():
             print('\t'.join((
-                name,
+                flow_name,
+                str(flow.frequency),
+                job_name,
                 job.resource_class.value,
                 job.executable,
                 job.output
