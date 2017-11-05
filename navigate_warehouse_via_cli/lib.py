@@ -32,27 +32,23 @@ class Flow(object):
         self.jobs = jobs
 
 
-def randint(low=0, high=sys.maxsize):
-    return random.randint(low, high)
-
-
 def create_path(end=None):
     adjectives = 1 if end else 2
-    parts = ('/data', codenamize.codenamize(randint(), adjectives, join='/'))
+    parts = ('/data', codenamize.codenamize(random.randint(0, sys.maxsize), adjectives, join='/'))
     if end:
         parts += (end.replace('-', '_'), )
     return os.path.join(*parts)
 
 
 def create_name():
-    return codenamize.codenamize(randint(), adjectives=1, join='-')
+    return codenamize.codenamize(random.randint(0, sys.maxsize), adjectives=1, join='-')
 
 
 def generate_job(name, potential_inputs, output=None):
     output = output if output else create_path(name)
     inputs = set(random.sample(
         potential_inputs,
-        randint(1, min(3, len(potential_inputs)))
+        random.randint(1, min(3, len(potential_inputs)))
     ))
 
     return Job(
@@ -77,7 +73,7 @@ def generate_schedule(
     datasets = set(
         create_path() for _ in range(
             0,
-            randint(
+            random.randint(
                 min_initial_datasets,
                 max_initial_datasets)))
 
@@ -87,7 +83,7 @@ def generate_schedule(
         jobs = dict()
 
         # Generate jobs that accept initial dataset inputs
-        for _ in range(randint(1, max_initial_jobs_per_flow)):
+        for _ in range(random.randint(1, max_initial_jobs_per_flow)):
             name = create_name()
             job = generate_job(name, potential_inputs=datasets)
             initial_jobs[name] = job
@@ -96,7 +92,7 @@ def generate_schedule(
         # Generate pairs of jobs that accept flow inputs (one job and an
         # associated loader)
         datasets_used = set()
-        end_jobs = randint(1, max_end_jobs_per_flow)
+        end_jobs = random.randint(1, max_end_jobs_per_flow)
         for last in map(lambda i: i == 0, reversed(range(0, end_jobs))):
             # Job that accepts flow dataset inputs
             name = create_name()
@@ -120,11 +116,11 @@ def generate_schedule(
 
         jobs.update(initial_jobs)
         return Flow(
-            frequency=randint(1, 24),
+            frequency=random.randint(1, 24),
             jobs=jobs
         )
 
     flows = dict()
-    for _ in range(0, randint(min_flows, max_flows)):
+    for _ in range(0, random.randint(min_flows, max_flows)):
         flows[create_name()] = generate_flow()
     return flows
