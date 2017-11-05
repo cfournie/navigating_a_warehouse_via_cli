@@ -63,7 +63,7 @@ def test_generate_job():
         output=output
     )
     assert job.executable == 'jobs/my-job.py'
-    assert job.inputs <= set(potential_inputs)
+    assert set(job.inputs) <= set(potential_inputs)
     assert job.output == output
 
 
@@ -109,7 +109,7 @@ def test_generate_schedule():
 
     # Does this initial job use any other job in this flow's output? (if so
     # it's not an 'initial' job)
-    assert not initial_job.inputs & set(job.output for job in flow.jobs)
+    assert not set(initial_job.inputs) & set(job.output for job in flow.jobs)
 
     # Are there any duplicate output paths?
     outputs = set()
@@ -125,6 +125,12 @@ def test_generate_schedule():
             flow_job = f'{flow.name}.{job.name}'
             assert flow_job not in flow_jobs
             flow_jobs.add(flow_job)
+
+
+def test_generate_schedule_multiple_times():
+    flows = lib.generate_schedule(seed=2)
+    assert flows == lib.generate_schedule(seed=2)
+    assert flows != lib.generate_schedule(seed=3)
 
 
 @pytest.fixture

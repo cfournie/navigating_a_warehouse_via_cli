@@ -3,6 +3,7 @@ import itertools
 import os
 import random
 import sys
+import typing
 
 import codenamize
 import networkx as nx
@@ -16,24 +17,18 @@ class ResourceClass(enum.Enum):
     XXLARGE = 'xxlarge'
 
 
-class Job(object):
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, name, resource_class, executable, inputs, output):
-        self.name = name
-        self.resource_class = resource_class
-        self.executable = executable
-        self.inputs = inputs
-        self.output = output
+class Job(typing.NamedTuple):  # pylint: disable=too-few-public-methods
+    name: str
+    resource_class: ResourceClass
+    executable: str
+    inputs: typing.Iterable[str]
+    output: str
 
 
-class Flow(object):
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, name, frequency, jobs):
-        self.name = name
-        self.frequency = frequency  # Hours
-        self.jobs = jobs
+class Flow(typing.NamedTuple):  # pylint: disable=too-few-public-methods
+    name: str
+    frequency: int  # Hours
+    jobs: typing.Iterable[Job]
 
 
 def create_path(end=None, paths=None):
@@ -68,10 +63,10 @@ def create_name(named_objects=None):
 
 
 def generate_job(name, potential_inputs, output):
-    inputs = set(random.sample(
+    inputs = random.sample(
         potential_inputs,
         random.randint(1, min(3, len(potential_inputs)))
-    ))
+    )
     return Job(
         name=name,
         resource_class=random.choice(list(ResourceClass)),
@@ -93,13 +88,13 @@ def generate_schedule(
         random.seed(seed)
 
     datasets = random.randint(min_initial_datasets, max_initial_datasets)
-    datasets = set(create_path() for _ in range(0, datasets))
+    datasets = list(create_path() for _ in range(0, datasets))
 
-    flows = set()
+    flows = []
 
     def generate_flow(flows, datasets):
-        initial_jobs = set()
-        initial_datasets = set()
+        initial_jobs = []
+        initial_datasets = []
 
         # Generate jobs that accept initial dataset inputs
         for _ in range(random.randint(1, max_initial_jobs_per_flow)):
@@ -110,15 +105,13 @@ def generate_schedule(
                     paths=itertools.chain(
                         datasets, initial_datasets))
             )
-            initial_jobs.add(job)
-            initial_datasets.add(job.output)
+            initial_jobs.append(job)
+            initial_datasets.append(job.output)
 
         # Generate pairs of jobs that accept flow inputs (one job and an
         # associated loader)
-        jobs = set()
-        datasets_used = set()
-        end_jobs = random.randint(1, max_end_jobs_per_flow)
-        for last in map(lambda i: i == 0, reversed(range(0, end_jobs))):
+        jobs = []
+        for _ in range(0, random.randint(1, max_end_jobs_per_flow)):
             # Job that accepts flow dataset inputs
             name = create_name(itertools.chain(initial_jobs, jobs))
             job = generate_job(
@@ -128,14 +121,8 @@ def generate_schedule(
                     paths=itertools.chain(
                         datasets, initial_datasets))
             )
-            jobs.add(job)
-            datasets.add(job.output)
-
-            # Make sure that all flow dataset inputs are used
-            datasets_used |= set(job.inputs)
-            unused_datasets = initial_datasets - datasets_used
-            if last and unused_datasets:
-                job.inputs |= unused_datasets
+            jobs.append(job)
+            datasets.append(job.output)
 
             # Load this output (don't register it as an eligible input)
             loader = generate_job(
@@ -143,14 +130,13 @@ def generate_schedule(
                 potential_inputs=(job.output,),
                 output=f'scheme.{name}@database'
             )
-            jobs.add(loader)
+            jobs.append(loader)
 
         # Fold in initial jobs and their datasets
-        jobs |= initial_jobs
-        datasets |= initial_datasets
+        jobs.extend(initial_jobs)
+        datasets.extend(initial_datasets)
 
         # Create flow
-
         return Flow(
             name=create_name(flows),
             frequency=random.randint(1, 24),
@@ -158,7 +144,7 @@ def generate_schedule(
         )
 
     for _ in range(0, random.randint(min_flows, max_flows)):
-        flows.add(generate_flow(flows, datasets))
+        flows.append(generate_flow(flows, datasets))
     return flows
 
 
