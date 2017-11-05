@@ -2,47 +2,52 @@ import random
 import re
 
 import navigate_warehouse_via_cli.lib as lib
-import pytest
 
 
-@pytest.fixture
-def random_seed():
-    random.seed(2)
-
-
-pytestmark = (  # pylint: disable=global-variable,invalid-name
-    pytest.mark.usefixtures("random_seed")
-)
+def assert_path(path):
+    assert path.startswith('/data/')
+    assert not path.endswith('/')
+    assert path.count('/') == 4
+    assert all(path.lstrip('/').split('/'))
 
 
 def test_create_path():
-    assert lib.create_path() == '/data/witty/abnormal/meeting'
-    assert lib.create_path('my-name') == '/data/fine/cake/my_name'
+    assert_path(lib.create_path())
+    assert_path(lib.create_path('my-name'))
+    assert lib.create_path('my-name').endswith('/my_name')
 
 
 def test_create_name():
-    assert lib.create_name() == 'abnormal-meeting'
+    name = lib.create_name()
+    assert name
+    assert len(name.split('-')) == 2
+    assert all(name.split('-'))
 
 
 def test_generate_job():
+    name = 'my-job'
+    potential_inputs = ['input-a', 'input-b', 'input-c']
+    output = 'my-output'
+
     # Specify output
     job = lib.generate_job(
-        name='my-job',
-        potential_inputs=['input-a', 'input-b', 'input-c'],
-        output='my-output'
+        name=name,
+        potential_inputs=potential_inputs,
+        output=output
     )
     assert job.executable == 'jobs/my-job.py'
-    assert job.inputs == {'input-a', }
-    assert job.output == 'my-output'
+    assert job.inputs <= set(potential_inputs)
+    assert job.output == output
 
     # Don't specify output
     job = lib.generate_job(
-        name='my-job',
-        potential_inputs=['input-a', 'input-b', 'input-c'],
+        name=name,
+        potential_inputs=potential_inputs
     )
     assert job.executable == 'jobs/my-job.py'
-    assert job.inputs == {'input-a', 'input-c', }
-    assert job.output == '/data/alleged/hotel/my_job'
+    assert job.inputs <= set(potential_inputs)
+    assert_path(job.output)
+    assert job.output not in set(potential_inputs)
 
 
 def test_generate_schedule():
@@ -52,10 +57,7 @@ def test_generate_schedule():
     flow = random.choice(list(flows.values()))
 
     # Does this flow have reasonable values?
-    assert isinstance(flow.monitoring, lib.Monitoring)
-    assert re.match(r'[a-z\-]+@example.com', flow.owner)
-    assert re.match(r'[0-9]+h', flow.frequency)
-    assert re.match(r'[0-9]+h', flow.slo)
+    assert flow.frequency > 0
     assert flow.jobs
 
     def assert_job(job):
@@ -85,8 +87,8 @@ def test_generate_schedule():
     # Find the 'initial' job that created the input for this 'end' job
     initial_job = [job for job in flow.jobs.values(
     ) if job.output in end_job.inputs]
-    assert len(initial_job) == 1
-    initial_job = initial_job[0]
+    assert initial_job
+    initial_job = initial_job[0]  # Pick an arbitrary end job
 
     # Does this 'intitial' job have reasonable values?
     assert_job(initial_job)

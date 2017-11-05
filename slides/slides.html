@@ -219,9 +219,7 @@ So how can we gain a bit more speed and access to more metadata to search throug
 .left[
 ```yaml
 order-transaction-states-incremental:
-  owner: team@example.com
   frequency: 2h
-  service-level-objective: 4h
 
   extract-orders:
     executable: jobs/extract_orders.py
@@ -239,7 +237,7 @@ order-transaction-states-incremental:
   load-gmv:
     resource_class: xxlarge
     executable: jobs/loader.py
-    input: /data/frontroom/gmv-facts/
+    inputs: /data/frontroom/gmv-facts/
     output: shopify.gmv_facts@database
 ```
 ]

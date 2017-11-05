@@ -6,12 +6,6 @@ import sys
 import codenamize
 
 
-class Monitoring(enum.Enum):
-    OFF = 'off'
-    PASSIVE = 'passive'
-    ACTIVE = 'active'
-
-
 class ResourceClass(enum.Enum):
     SMALL = 'small'
     MEDIUM = 'medium'
@@ -33,12 +27,8 @@ class Job(object):
 class Flow(object):
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, owner, monitoring=None,
-                 frequency=None, slo=None, jobs=None):
-        self.monitoring = monitoring if monitoring else Monitoring.OFF
-        self.owner = owner
-        self.frequency = frequency
-        self.slo = slo
+    def __init__(self, frequency=None, jobs=None):
+        self.frequency = frequency  # Minutes
         self.jobs = jobs
 
 
@@ -90,7 +80,6 @@ def generate_schedule(
             randint(
                 min_initial_datasets,
                 max_initial_datasets)))
-    owners = ['%s@example.com' % create_name() for _ in range(randint(5, 10))]
 
     def generate_flow():
         initial_jobs = dict()
@@ -107,8 +96,8 @@ def generate_schedule(
         # Generate pairs of jobs that accept flow inputs (one job and an
         # associated loader)
         datasets_used = set()
-        for last in map(lambda i: i == 0, reversed(
-                range(randint(0, max_end_jobs_per_flow)))):
+        end_jobs = randint(1, max_end_jobs_per_flow)
+        for last in map(lambda i: i == 0, reversed(range(0, end_jobs))):
             # Job that accepts flow dataset inputs
             name = create_name()
             job = generate_job(name, potential_inputs=initial_datasets)
@@ -130,14 +119,8 @@ def generate_schedule(
             jobs['load-' + name] = loader
 
         jobs.update(initial_jobs)
-
-        slo = randint(0, 24)
-        frequency = randint(slo, 24) if slo else None
         return Flow(
-            owner=random.choice(owners),
-            monitoring=random.choice(list(Monitoring)),
-            frequency='{}h'.format(frequency) if frequency else None,
-            slo='{}h'.format(frequency) if slo else None,
+            frequency=randint(1, 24) * 60 * 60,
             jobs=jobs
         )
 
