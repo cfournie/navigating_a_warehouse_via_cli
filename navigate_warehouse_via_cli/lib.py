@@ -27,8 +27,8 @@ class Job(object):
 class Flow(object):
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, frequency=None, jobs=None):
-        self.frequency = frequency  # Minutes
+    def __init__(self, frequency, jobs):
+        self.frequency = frequency  # Hours
         self.jobs = jobs
 
 
@@ -120,7 +120,7 @@ def generate_schedule(
 
         jobs.update(initial_jobs)
         return Flow(
-            frequency=randint(1, 24) * 60 * 60,
+            frequency=randint(1, 24),
             jobs=jobs
         )
 
