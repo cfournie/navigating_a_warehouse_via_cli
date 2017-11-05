@@ -70,7 +70,7 @@ Chris Fournier (@cfournie)
 
 ???
 
-Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you today about a simple tool that I wrote in Python to navigate out data warehouse and how to leverage other unix tools to get the most of such scripts.
+Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you today about a simple tool that I wrote in Python to navigate our data warehouse and how to leverage other unix tools to get the most of such scripts.
 
 In case you haven't heard of Shopify...
 
@@ -117,7 +117,7 @@ One example of a question that we try to answer for Shopify as a whole is:
 
 We call that gross merchandise value (or GMV) and that's one of the metrics that we use as a company to gauge our success.
 
-This is not a trivial number to calculate given the volume of orders and transactions that we process and the analysis that we do to break this number down by payment gateway, industry, monthly recurring revenue, etc. We're also continuously processing data to keep these numbers up to date.
+This is not a trivial number to calculate given the volume of orders and transactions that we process and the logic that we use to break this number down by payment gateway, industry, monthly recurring revenue, etc. In 2016 alone we had over $15 billion dollars worth of GMV and that's a lot of rows. We're also continuously processing data to keep these numbers up to date.
 
 But from a broad techincal perspective, how do we make this dataset?
 
@@ -137,9 +137,9 @@ class: center, middle
 
 <div class="mermaid">
 graph LR
-    A(Extract<br>orders)-- raw orders -->C(Transform into<br>GMV per shop)
-    B(Extract<br>transactions)-- raw transactions -->C
-    C-- GMV per shop -->D(Load to<br>a Database)
+    A(Extract<br>Orders)-- Raw Orders -->C(Transform into<br>GMV per Shop)
+    B(Extract<br>Transactions)-- Raw Transactions -->C
+    C-- GMV per Shop -->D(Load to<br>a Database)
 </div>
 
 <br><br><br>
@@ -148,11 +148,13 @@ graph LR
 ???
 
 We predominantly run ETL batch jobs that:
-  - Extract batches of data from operational systems (like MySQL) and stores it elsewhere (for example as a dataset called "raw orders")
+  - Extract batches of data from operational systems (like MySQL) and store it elsewhere (for example as a dataset called "raw orders")
   - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
   - Load that dataset into a database for analysts to issue queries against and create reports upon
 
-These batch jobs are written mostly in Python by our analysts (with the help of our engineers).  The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
+We do all of this in an environment that's separate from where our product runs, i.e. our data warehouse, because our systems have different load and different end goals.  One servers shops, the other servers reports statistics that aggregate data from all shops.  We're not creating transactions and selecting just those that occurred today for one shop, we're reading all transactions over all shops since we last peeked at the data.
+
+The batch jobs that we run in our warehouse are written mostly in Python by our analysts (with the help of our engineers) and the number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
 
 
 ---
@@ -180,7 +182,7 @@ Deploys per day in 2017 on<br>average (±8.6 std dev)
 
 We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
 
-The engineering team that I work on not only maintains the platform that these jobs are developed and run on, but also helps our analysts keep these jobs running reliably.
+The engineering team that I work on not only maintains the platform and frameworks that these jobs are developed and run on, but also helps our analysts keep these jobs running reliably.
 
 To help make sure that these jobs are working, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
 
@@ -252,13 +254,13 @@ order-transaction-states-incremental:
 
 ???
 
-Well we store the definition of our schedule in a YAML file in our git repository, and the version that we have in our master branch is at most 20 minutes newer than what could be running in our production environment, so it's a pretty good analogue for production.
+Well we store the definition of our schedule in a YAML file in our git repository, and the version that we have in our master branch is at most 20 minutes newer than what could be running in our production environment, so it's a pretty good analogue for production, and when it's not, we can check out the exact git SHA that our production environment is running.
 
-We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this group of jobs has a team that owns it, it runs every 2h, shouldn't be more than 4h behind, it has an extraction job that produces raw dara, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.
+We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this YAML has been simplified for brevity but we can see that it runs all of these jobs every 2h, it has an extraction job that produces raw data, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.  We can also see the executable for each job, whic datasets it reads/writs, and how many resources it uses.
 
 With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
 
-But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when alayzing classes of failures, we'd like to be able to break down that list by various job metadata so that we can better understand which jobs are impacted by an issue.
+But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when analyzing classes of failures, we'd like to be able to break down that list by some of our job metadata so that we can better understand which jobs are impacted by an issue, e.g., maybe maybe jobs that are scheduled frequently and use a "small" amount of resources are having an issue. It would be useful to find out which ones and how many of them there are.
 
 
 ---
@@ -286,11 +288,11 @@ ubiquitous-emphasis     | large          | jobs/ubiquitous-emphasis.py
 
 ???
 
-We this YAML data layed out in  a table, and we need the ability to filter by columns.
+What we need is the data in this YAML laid out as a table, and we need the ability to filter by columns.
 
-We can't get that directly from the YAML itself. We also can't get any of properties of the implementations themselves. They're implemented in Python using declarative APIs, and if we instantiated those modules we could learn even more about how they're set up and what they do.
+We can't get table directly from the YAML itself. We also can't get any of properties of the job implementations themselves. They're implemented in Python using declarative APIs, and if we instantiated those modules we could learn even more about how they're set up and what they do and make columns out of that information.
 
-So we can't get this data directly from the YAML, but thankfully we already have libraries that parse this YAML to update our scheduler, Oozie. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create this table using a Python script!
+Thankfully we already have libraries that parse this YAML and read our implementations to update our scheduler, Oozie. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create the table that we want using a Python script!
 
 
 ---
@@ -319,11 +321,15 @@ for flow in flows:
 
 ???
 
-So let's script this! Let's keep it simple and just read this schedule and to compose a table let's just print eveything we know about each job on one line.
+So let's script this! Let's keep it simple and just read this schedule and to compose a table let's just print one job per line.
 
-Note that I'm printing the flow name and frequency once for each job. This is repeticious, and means that this is not a normalized table. Normally this would be bad table design, but to keep this simple, it will make filtering this table by a flow's properties to get job information a lot easier. Denormalized tables are your friend on the CLI.
+So let's iterate over each flow, or group of jobs, and then each job within and print the flow and job information.
 
-What does this look like?
+Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. This is repeticious, but this is intentional. Usually it would be bad to design a denormalized table like this, but this it will make filtering this table by a flow's properties to get job information a lot easier. Since we primarily care about jobs but we still want to see a flow's properties when queriying jobs, it makes sense to pre-join this table.  Denormalized tables are your friend on the CLI.
+
+I'm sure some of you are a bit dubious of that claim, some DBAs are shaking their heads or are gettting up to leave, and the rest of you are wondering whether we can join tables in bash at all or whether  all of this table talk is just a sick SQL metaphor. Well, stay tuned to find out!
+
+So, what does this table look like?
 
 
 ---
@@ -356,7 +362,7 @@ Whitespace was a mess, we couldn't tell where the columns were.
 
 Jobs also have multiple inputs, so we're basically cramming an array of inputs into one cell in this table. Not great. It's almost like having a variable number of columns.
 
-So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI.
+So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI: column.
 
 
 ---
@@ -376,9 +382,9 @@ RUN python scripts/jobs2.py | column -t
 What did I just do there? Two things:
 
 1. I removed our variable input column
-2. I piped the output the Python script to another program called "column" and asked it to format the output into a table
+2. I piped the output of the Python script to another program called "column" and asked it to format the output into a table
 
-What what is piping magic you might ask?
+What is piping wizardry you might ask?
 
 This is some of the magic that Linux/BSD/OSX can provide you so that you can combine your simple script with many other UNIX tools to create some truly fantastic output.
 
@@ -398,12 +404,14 @@ This is some of the magic that Linux/BSD/OSX can provide you so that you can com
 
 ???
 
+Here's the command that I just ran. I ran my script and its output was piped to the column program.
+
 Roughly how this works is:
 1. Bash will create a special in-memory pipe file in the pipe filesystem
 2. Bash will then fork twice to create two child processes, one for python and one for column
 3. Bash will set python's stdout (a file descriptor where it writes output to during print) to the write end of the pipe file
 4. Bash will set column's stdin (a file descriptor where it reads input from) to the read end of that same pipe file
-5. Bash then starts both processes in parrallel and they write and read from the pipe file until they're finished.
+5. Both processes run roughly in parrallel and they write and read from the pipe file until they're finished.
 
 So we can make a super simple Python script and let bash and other unix programs massage our output into our desired form, and we get to spread this work over multiple cores.
 
@@ -421,9 +429,11 @@ RUN python scripts/jobs3.py | cut -f1 -f3 -f4 | column -t
 Let's change our python program a little and output tab separators instead of spaces. Why?
 Because a lot of the unix tools assume that fields i.e. columns are tab-separated.
 
-Once we do that, let's use a program called `cut` AND `column` to show a table of just flow and job names and the resource class.
+Once we do that, let's use a program called `cut` AND the `column` program to show a table of just flow andjob names and the resource class.
 
-`cut` can be used to say "give me only the first and second field (or column) in each row, and then we can pass just those two columns to the `column` program.
+`cut` can be used to say "give me only the first, third, and fourth field (or column) in each row, and then we can pass just those three columns to the `column` program.
+
+What a tidy readable table!
 
 
 ---
@@ -434,7 +444,6 @@ Once we do that, let's use a program called `cut` AND `column` to show a table o
 RUN python scripts/jobs3.py | wc -l
 RUN python scripts/jobs3.py | grep large | column -t
 RUN python scripts/jobs3.py | awk '$4 == "large"' | column -t
-RUN python scripts/jobs3.py | awk '$4 == "large"' | wc -l
 RUN python scripts/jobs3.py | head
 ```
 ]
@@ -448,11 +457,9 @@ How do we answer questions like:
 
 A little more advanced:
 
-"Which jobs use the large resource class?" Grep is good for filtering, but awk is even better at specifying exact values to compare a column to
+"Which jobs use the large resource class?" Grep is good for filtering, but notice how in our search for "large" we also included "xlarge" and "xxlarge"? Oops. `awk` is a tool that can address that by specifying exact values to compare to specific columns.
 
-"How many large jobs are there?"
-
-Now all of those calls produced a lot of output, which is difficult to read when your fiddling with these programs and trying to figure out which parameters to use. One way to make prototyping these commands easier is to simply chop that output down to just a few lines or so using `head`. Let's try that.
+Now all of those calls (except wordcount) produced a lot of output, which is difficult to read when your fiddling with these programs and trying to figure out which parameters to use. One way to make prototyping these commands easier is to simply chop that output down to just a few lines or so using `head`. Let's try that.
 
 Uh oh!  There's a garbled stack trace in there. What happened?
 
