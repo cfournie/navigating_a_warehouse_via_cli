@@ -17,7 +17,7 @@ class ResourceClass(enum.Enum):
     XXLARGE = 'xxlarge'
 
 
-class Job(typing.NamedTuple):  # pylint: disable=too-few-public-methods
+class Job(typing.NamedTuple):
     name: str
     resource_class: ResourceClass
     executable: str
@@ -25,7 +25,7 @@ class Job(typing.NamedTuple):  # pylint: disable=too-few-public-methods
     output: str
 
 
-class Flow(typing.NamedTuple):  # pylint: disable=too-few-public-methods
+class Flow(typing.NamedTuple):
     name: str
     frequency: int  # Hours
     jobs: typing.Iterable[Job]
