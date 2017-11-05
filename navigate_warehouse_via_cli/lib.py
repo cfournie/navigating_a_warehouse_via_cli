@@ -53,7 +53,7 @@ def generate_job(name, potential_inputs, output=None):
 
     return Job(
         resource_class=random.choice(list(ResourceClass)),
-        executable=os.path.join('jobs', name + '.py'),
+        executable=os.path.join(f'jobs/{name}.py'),
         inputs=inputs,
         output=output
     )
@@ -108,11 +108,11 @@ def generate_schedule(
 
             # Load this output (don't register it as an eligible input)
             loader = generate_job(
-                name='load-' + name,
+                name=f'load-{name}',
                 potential_inputs=(job.output,),
-                output='scheme.%s@database' % name
+                output=f'scheme.{name}@database'
             )
-            jobs['load-' + name] = loader
+            jobs[f'load-{name}'] = loader
 
         jobs.update(initial_jobs)
         return Flow(
