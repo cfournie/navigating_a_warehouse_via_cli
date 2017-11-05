@@ -34,14 +34,21 @@ class Flow(object):
 
 def create_path(end=None):
     adjectives = 1 if end else 2
-    parts = ('/data', codenamize.codenamize(random.randint(0, sys.maxsize), adjectives, join='/'))
+    parts = (
+        '/data',
+        codenamize.codenamize(
+            random.randint(0, sys.maxsize), adjectives, join='/'
+        )
+    )
     if end:
         parts += (end.replace('-', '_'), )
     return os.path.join(*parts)
 
 
 def create_name():
-    return codenamize.codenamize(random.randint(0, sys.maxsize), adjectives=1, join='-')
+    return codenamize.codenamize(
+        random.randint(0, sys.maxsize), adjectives=1, join='-'
+    )
 
 
 def generate_job(name, potential_inputs, output=None):
