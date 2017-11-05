@@ -12,5 +12,5 @@ lint:
 
 autolint: autopep8 lint
 
-run_tests: clean
-	py.test --durations=10 .
+test:
+	py.test -vv .
