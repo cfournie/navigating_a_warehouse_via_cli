@@ -82,12 +82,12 @@ def generate_job(name, potential_inputs, output):
 
 
 def generate_schedule(
-        min_initial_datasets=10,
-        max_initial_datasets=30,
+        min_initial_datasets=5,
+        max_initial_datasets=10,
         max_initial_jobs_per_flow=3,
         max_end_jobs_per_flow=4,
-        min_flows=50,
-        max_flows=100,
+        min_flows=5,
+        max_flows=10,
         seed=None):
     if seed:
         random.seed(seed)
@@ -179,3 +179,9 @@ def create_downstream(graph):
         downstream_datasets.remove(dataset)
         for downstream_dataset in downstream_datasets:
             yield dataset, downstream_dataset
+
+
+def draw(graph, path):
+    agraph = nx.nx_agraph.to_agraph(graph)
+    agraph.layout('dot')
+    agraph.draw(path)

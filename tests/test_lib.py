@@ -183,3 +183,10 @@ def test_create_downstream(graph):
         ('joined-ab', 'joined-abc'),
         ('joined-bc', 'joined-abc')
     ])
+
+
+def test_draw(graph, tmpdir):
+    path = tmpdir.join('graph.dot')
+    lib.draw(graph, str(path))
+    assert path.exists()
+    assert path.read()

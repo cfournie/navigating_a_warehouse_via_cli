@@ -22,6 +22,7 @@ AUTHOR = 'Chris Fournier'
 REQUIRED = [
     'codenamize>=1.2.2',
     'networkx>=2',
+    'pygraphviz==1.4rc1',
     'setuptools>=34.3'
 ]
 
