@@ -221,6 +221,8 @@ So how can we gain a bit more speed and access to more metadata to search throug
        
 ### Search YAML flow and job definitions
 
+
+<div style="margin: auto;width: 80%">
 .left[
 ```yaml
 order-transaction-states-incremental:
@@ -246,6 +248,7 @@ order-transaction-states-incremental:
     output: shopify.gmv_facts@database
 ```
 ]
+</div>
 
 ???
 
@@ -293,10 +296,10 @@ So we can't get this data directly from the YAML, but thankfully we already have
 ---
 
 
-### Parse and print jobs
+### Parse and print metadata
 
+<div style="margin: auto;width: 60%">
 .left[
-
 ```python
 for flow in flows:
     for job in flow.jobs:
@@ -311,6 +314,7 @@ for flow in flows:
         )
 ```
 ]
+</div>
 
 
 ???
@@ -458,6 +462,7 @@ Uh oh!  There's a garbled stack trace in there. What happened?
 
 ### `python scripts/jobs3.py | head`
 
+<div style="margin: auto;width: 70%">
 .left[
 ```
 Traceback (most recent call last):
@@ -466,6 +471,7 @@ Traceback (most recent call last):
 BrokenPipeError: [Errno 32] Broken pipe
 ```
 ]
+</div>
 
 ???
 
@@ -487,6 +493,7 @@ Thankfully, the OS provides us a way to tell that we should stop writing.
 
 ### `python scripts/jobs4.py | head`
 
+<div style="margin: auto;width: 70%">
 .left[
 ```python
 import signal
@@ -498,6 +505,7 @@ def handle_sigpipe(signum, frame):
 signal.signal(signal.SIGPIPE, handle_sigpipe)
 ```
 ]
+</div>
 
 ???
 
@@ -528,8 +536,15 @@ RUN python scripts/jobs4.py | cut -f4 | sort | uniq
 
 ???
 
-What are the most frequently-run jobs?
-Which resource classes are used?
+There's a `sort` utility to sort by column which can even interpret text as numbers which we can use to answer:
+
+"What are the most frequently-run jobs?"
+
+There's also a `uniq` utility that can take a sorted output and return just the uniq values which we can use to answer:
+
+"Which resource classes are used?"
+
+Both useful utilities on their own, but where they really shine is in an application that I'll show you next.
 
 
 ---
@@ -549,7 +564,7 @@ graph LR
 
 <div style="margin: auto;width: 80%">
 .left[
-Dataset               | Downstream Dataset
+Start                 | End
 --------------------- | --------------
 Raw Orders            | GMV per Shop
 Raw Transactions      | GMV per Shop
@@ -561,28 +576,96 @@ Transactions per Shop | Transactions per Shop and Gateway
 
 <br><br><br>
 
+???
+
+Before I delve into that application though, I want to talk about another type of table that we can generate.
+
+Previosly, I showed you a graph of batch jobs and the datasets that they produce. But we can also take the inputs and outputs of those jobs and compose a graph with datasets as nodes and incoming directed edges showing all of the datasets that are used to create that dataset.
+
+For example, "GMV per Shop" is comprised of "Raw Orders" and "Raw Transactions".
+
+This kind of a graph is interesting because we can use it to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally only extract some of our "Raw Orders" and not all of the, then only one other dataset, "GMV per Shop", will also be missing orders.
+
+But if instead the "Raw Transactions" dataset is missing some transactions, then 3 other datasets will be missing data, first "GMV per Shop" and "Transactions per Shop" and then transitively "Transactions per Shop and Gateway" would also be missing transactions.
+
+We can represent this in a tabular format with one row per path through this graph with the start and end of the path each being columns.
+
+For example we can see that there is a path from:
+- "Raw Transactions" to "GMV per Shop"
+- "Raw Transactions" to "Transactions per Shop" and
+- "Raw Transactions" to "Transactions per Shop and Gateway"
+
 
 ---
 
 
-Downstream grain
+<div style="margin: auto;width: 80%">
+.left[
+```shell
+python scripts/downstream.py | awk '$1 == "dataset"'
+```
+]
+</div>
+
+???
+
+We can then use `awk` to ask:
+
+"Which datasets are downstream of X?"
+
+We could have also added columns so that we can see which team owns each dataset and the name of the producing job so that we can take actions on this information, like:
+
+- Warn the owning teams of these datasets about missing or erroneous rows;
+- Rebuilding these datasets in topological order to fix missing or erroneous rows; or
+- Stop downstream jobs from running before they pick up bad rows.
+
+Now let's imagine a more alarming scenario than just one bad dataset posioning downstream datasets.
 
 
 ---
 
 
-All datasets downstream of a job that uses small resources?
+<div style="margin: auto;width: 90%">
+.left[
 
-Filter jobs that use small resources and produce output
-From output, we could get all downstream
+```shell
+python scripts/jobs4.py | awk '$2 < 8 && $4 == "small"' > bad_jobs
+python scripts/downstream.py > all_downstream
+```
+]
+</div>
 
-Need join
+???
+
+Let's say that we'd identified that all jobs that have a "small" resource class and a frequency less than 3 hours have been dropping rows. Maybe we accidentaly added a bug in our software where when we don't have a lot of memory and we run frequently enough we drop rows.
+
+We can generate a list of jobs that meet those criteria and the datasets that they are poisoning.
+
+We can also generate a list of everything downstream from something.
+
+If we want to find out which datasets are affected, what we really need is the ability to join these two lists together on the job output and downstream start columns, and because there'd be duplicates, we'd want to `uniq` the output.
+
+Can we do that via the CLI?
 
 
 ---
 
 
-Join!
+<div style="margin: auto;width: 100%">
+.left[
+
+```shell
+cat bad_jobs | sort -k5 > sorted_bad_jobs
+cat all_downstream | sort -k1 > sorted_all_downstream
+join -1 5 -2 1 -t $'\t' sorted_bad_jobs sorted_all_downstream > joined
+cat joined | cut -f6 | sort | uniq
+```
+]
+</div>
+
+???
+
+Yes, yes we can :D
 
 
 ---
