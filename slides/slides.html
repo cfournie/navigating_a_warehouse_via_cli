@@ -192,19 +192,7 @@ background-repeat: no-repeat;
 
 ???
 
-One way that we navigate our jobs is through a Django app called Hue. It's a very handy way to visualize groups of jobs (which we refer to as flows) and the jobs themselves.
-
-
----
-
-
-background-image: url(./hue_logs.png)
-background-position: center;
-background-repeat: no-repeat;
-
-???
-
-It can even stream job logs for us.
+One way that we navigate our jobs is through a Django app called Hue. This isn't the latest version of Hue here, but the UI is essentially the same. It's a very handy way to visualize groups of jobs (which we refer to as flows) and the jobs themselves.
 
 
 ---
@@ -216,11 +204,11 @@ background-repeat: no-repeat;
 
 ???
 
-And can also show lists of jobs that are completed or being run by our scheduler, Oozie.
+Hue can also show lists of jobs that are completed or being run by our scheduler, Oozie.
 
-One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or metadata (like the where it reads/writes, which team maintains it, etc.).
+One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or metadata (like the where it reads/writes, which team maintains it, etc.). This is an obstacle when we're trying to explore our jobs and understand how they're structured.
 
-So how can we get around that?
+So how can we gain a bit more speed and access to more metadata to search through?
 
 
 ---
