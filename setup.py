@@ -21,6 +21,7 @@ AUTHOR = 'Chris Fournier'
 # What packages are required for this module to be executed?
 REQUIRED = [
     'codenamize>=1.2.2',
+    'networkx>=2',
     'setuptools>=34.3'
 ]
 

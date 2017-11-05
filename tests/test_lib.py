@@ -4,6 +4,7 @@ import sys
 import unittest.mock as mock
 
 import navigate_warehouse_via_cli.lib as lib
+import pytest
 
 
 def assert_path(path):
@@ -124,3 +125,61 @@ def test_generate_schedule():
             flow_job = f'{flow.name}.{job.name}'
             assert flow_job not in flow_jobs
             flow_jobs.add(flow_job)
+
+
+@pytest.fixture
+def graph():
+    return lib.create_graph((
+        lib.Flow(name=None, frequency=None, jobs=(
+            lib.Job(
+                name=None, resource_class=None, executable=None,
+                inputs=('raw-a', 'raw-b'),
+                output='joined-ab'
+            ),
+            lib.Job(
+                name=None, resource_class=None, executable=None,
+                inputs=('raw-b', 'raw-c'),
+                output='joined-bc'
+            )
+        )),
+        lib.Flow(name=None, frequency=None, jobs=(
+            lib.Job(
+                name=None, resource_class=None, executable=None,
+                inputs=('joined-ab', 'joined-bc'),
+                output='joined-abc'
+            ),
+        ))
+    ))
+
+
+def test_create_graph(graph):
+    assert set(graph.nodes()) == set([
+        'raw-a',
+        'raw-b',
+        'raw-c',
+        'joined-ab',
+        'joined-bc',
+        'joined-abc'
+    ])
+    assert set(graph.edges()) == set([
+        ('raw-a', 'joined-ab'),
+        ('raw-b', 'joined-ab'),
+        ('raw-b', 'joined-bc'),
+        ('raw-c', 'joined-bc'),
+        ('joined-ab', 'joined-abc'),
+        ('joined-bc', 'joined-abc')
+    ])
+
+
+def test_create_downstream(graph):
+    assert set(lib.create_downstream(graph)) == set([
+        ('raw-a', 'joined-ab'),
+        ('raw-a', 'joined-abc'),
+        ('raw-b', 'joined-ab'),
+        ('raw-b', 'joined-abc'),
+        ('raw-b', 'joined-bc'),
+        ('raw-c', 'joined-abc'),
+        ('raw-c', 'joined-bc'),
+        ('joined-ab', 'joined-abc'),
+        ('joined-bc', 'joined-abc')
+    ])

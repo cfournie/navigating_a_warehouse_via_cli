@@ -5,6 +5,7 @@ import random
 import sys
 
 import codenamize
+import networkx as nx
 
 
 class ResourceClass(enum.Enum):
@@ -159,3 +160,22 @@ def generate_schedule(
     for _ in range(0, random.randint(min_flows, max_flows)):
         flows.add(generate_flow(flows, datasets))
     return flows
+
+
+def create_graph(flows):
+    graph = nx.DiGraph()
+    for flow in flows:
+        for job in flow.jobs:
+            for _input in job.inputs:
+                graph.add_edge(_input, job.output)
+    return graph
+
+
+def create_downstream(graph):
+    for dataset in graph.nodes():
+        downstream_datasets = set(nx.bfs_tree(
+            graph, source=dataset, reverse=False
+        ).nodes())
+        downstream_datasets.remove(dataset)
+        for downstream_dataset in downstream_datasets:
+            yield dataset, downstream_dataset
