@@ -651,6 +651,68 @@ Can we do that via the CLI?
 ---
 
 
+<div style="margin: auto;width: 40%">
+<div style="float: left;width: 40%">
+.left[
+```
+a
+b
+c
+```
+]
+</div>
+
+<div style="float: right;width: 40%">
+.left[
+```
+a	1
+b	2
+b	3
+d	4
+```
+]
+</div>
+</div>
+
+<br><br><br><br><br>
+
+<div style="margin: auto;width: 50%">
+.left[
+```shell
+join -1 1 -2 1 file_a file_b
+```
+]
+</div>
+
+<br>
+
+
+<div style="margin: auto;width: 20%">
+.left[
+```
+a 1
+b 2
+b 3
+```
+]
+</div>
+
+
+
+???
+
+Yes, yes we can :D
+
+We can use the `join` command to perform an equality join between two sorted files.  It produces one row for each pair of lines that match in the two files.
+
+For example, we can take these two files and join them on the first column of each file to produce the result below.
+
+If we replace these letters with bad datasets in the first file and a dataset and a dataset downstream from it in the second file, we can join them together to produce a list of all datasets downstream of a bad dataset.
+
+
+---
+
+
 <div style="margin: auto;width: 100%">
 .left[
 
@@ -665,13 +727,36 @@ cat joined | cut -f6 | sort | uniq
 
 ???
 
-Yes, yes we can :D
+
+First, we need to sort the data by the columns that we want to join on. For bar jobs that's the 5th column, with the job output. For all downstream that's the 1st column, the start of each path.
+
+Once sorted, we can use the `join` command, say that we want to join on bad jobs column 5 and downstream column 1 (and separate by tabs again in the end) and we can save that to a file called joined.
+
+Looking at that file we can see that it added the ends of each path to the last column here
+
+From that file, we can then cut eveything except the 
 
 
 ---
 
 
-Talk about data poisioning and the need for beskope queries.
+### Script your own tables
+
+### Filter with *`awk`* and use *`join`*
+
+
+???
+
+
+What I showed you here was an artificial scenario using some very simple scripts to make tables, but all of the principles are the same in the version that we use day to day.
+
+Using awk to do filtering and then performing joins is essential for us because each of our failures that we've experienced has been unique, for example, we've had to search for all datasets downstream of jobs that:
+- Incorrectly read only Parquet files when using filters
+- Failed to read data from two newly added MySQL shards
+- Read duplicates from a Kafka topic because Kafka was errioneiosly configured to mirror to itself
+- Missed late-arriving data caused by a Kafka partition being unavailable
+
+In all of these situations, being able to come up with an expression to filter our table of jobs and then join against the downstream table saved us countless minutes or even hours mainly because we prepared all of the metadata beforehand and we have a standardized table to parse. Before that, people were trying to write complicated Python scripts without and coming up with conflicting results. Now our biggest dissagrement is whether to use `grep` or `awk` for filtering.
 
 
 ---
@@ -686,6 +771,20 @@ Talk about data poisioning and the need for beskope queries.
 ###- *`uniq`* to filter out duplicate rows
 ###- *`join`* to join two sorted files on a column
 ]
+
+
+???
+
+So to summarize, I showed you the benefit of making some simple scripts to output tables and then I showed you how to use them with these wonderful unix tools.
+
+...
+
+And there are so many more that I didn't discuss.
+
+That's all the time that I have unfortunately,
+
+
+Check out the repo link below if you want these slides or to play around with these scripts, and thanks for listening!
 
 
 ---
