@@ -38,6 +38,9 @@
         left: 20px;
         opacity: .5;
       }
+      td, th {
+        padding: 0 6pt;
+      }
     </style>
 
     <link rel="stylesheet" href="./mermaid.dark.css">
@@ -259,18 +262,18 @@ But except for finding details for specific jobs and some basic aggregate statis
 ### Format YAML as a table
 
 .left[
-Job                     | Resources &nbsp;   | Executable | Etc.
+Job                     | Resources      | Executable | Etc.
 ----------------------- | -------------- | -----------
-cuddly-two              | large    | jobs/cuddly-two.py | ...
-load-cuddly-two         | xxlarge  | jobs/load-cuddly-two.py
-untidy-enthusiasm       | small    | jobs/untidy-enthusiasm.py
-load-untidy-enthusiasm  | large    | jobs/load-untidy-enthusiasm.py
-first-restaurant        | small    | jobs/first-restaurant.py
-load-first-restaurant   | small    | jobs/load-first-restaurant.py
-jazzy-comfortable       | xxlarge  | jobs/jazzy-comfortable.py
-load-jazzy-comfortable  | medium   | jobs/load-jazzy-comfortable.py
-annoyed-morning         | xxlarge  | jobs/annoyed-morning.py
-ubiquitous-emphasis     | large    | jobs/ubiquitous-emphasis.py
+cuddly-two              | large          | jobs/cuddly-two.py | ...
+load-cuddly-two         | xxlarge        | jobs/load-cuddly-two.py
+untidy-enthusiasm       | small          | jobs/untidy-enthusiasm.py
+load-untidy-enthusiasm  | large          | jobs/load-untidy-enthusiasm.py
+first-restaurant        | small          | jobs/first-restaurant.py
+load-first-restaurant   | small          | jobs/load-first-restaurant.py
+jazzy-comfortable       | xxlarge        | jobs/jazzy-comfortable.py
+load-jazzy-comfortable  | medium         | jobs/load-jazzy-comfortable.py
+annoyed-morning         | xxlarge        | jobs/annoyed-morning.py
+ubiquitous-emphasis     | large          | jobs/ubiquitous-emphasis.py
 ]
 
 <br><br><br>
@@ -530,7 +533,31 @@ Which resource classes are used?
 ---
 
 
-Job graph
+### Dataset dependencies
+
+<div class="mermaid">
+graph LR
+    A(Raw Orders)-->C(GMV per Shop)
+    B(Raw Transactions)-->C
+    B-->D(Transactions per Shop)
+    D-->E(Transactions per Shop<br>and Gateway)
+</div>
+
+<br>
+
+<div style="margin: auto;width: 80%">
+.left[
+Dataset               | Downstream Dataset
+--------------------- | --------------
+Raw Orders            | GMV per Shop
+Raw Transactions      | GMV per Shop
+Raw Transactions      | Transactions per Shop
+Raw Transactions      | Transactions per Shop and Gateway
+Transactions per Shop | Transactions per Shop and Gateway
+]
+</div>
+
+<br><br><br>
 
 
 ---
