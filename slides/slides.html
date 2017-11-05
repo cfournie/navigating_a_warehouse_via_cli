@@ -426,21 +426,44 @@ Because a lot of the unix tools assume that fields i.e. columns are tab-separate
 
 Once we do that, let's use a program called `cut` AND `column` to show a table of just job names and their resource class.
 
+`cut` can be used to say "give me only the first and second field (or column) in each row, and then we can pass just those two columns to the `column` program.
+
 
 ---
 
 
-RUN python scripts/jobs3.py | head | cut -f1 -f2 | column -t
+.left[
+```
+RUN python scripts/jobs3.py | wc -l
+RUN python scripts/jobs3.py | grep large | column -t
+RUN python scripts/jobs3.py | awk '$2 == "large"' | column -t
+RUN python scripts/jobs3.py | awk '$2 == "large"' | wc -l
+RUN python scripts/jobs3.py | head
+```
+]
 
 ???
+Let's take this further and flex some more of our rumoured analytical power here.
 
-That's sortof a long list though, let's try to show just the first few rows of the table using a program called `head`.
+How do we answer questions like:
 
-Uh oh!
+"How many jobs do we have? For that we can pipe our output to the `wc` or word count program and ask it to count lines"
+
+A little more advanced:
+
+"Which jobs use the large resource class?" Grep is good for filtering, but awk is even better at specifying exact values to compare a column to
+
+"How many large jobs are there?"
+
+Now all of those calls produced a lot of output, which is difficult to read when your fiddling with these programs and trying to figure out which parameters to use. One way to make prototyping these commands easier is to simply chop that output down to just a few lines or so using `head`. Let's try that.
+
+Uh oh!  There's a garbled stack trace in there. What happened?
 
 
 ---
 
+
+### `python scripts/jobs3.py | head`
 
 .left[
 ```
@@ -451,19 +474,117 @@ BrokenPipeError: [Errno 32] Broken pipe
 ```
 ]
 
+???
+
+Getting rind of some of the output we can see that what we got was a `BrokenPipeError`.
+
+That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it has decided that it has read enough, in this case by default after it sees 10 lines.
+
+Once it sees 10 lines, it closes the read end of the pipe file.
+
+But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file.
+
+When the Python script tries to write its 11th line of output, we get back from the OS an `EPIPE` errors which Python wraps for us as a `BrokenPipeError`.
+
+Thankfully, the OS provides us a way to tell that we should stop writing.
+
 
 ---
 
+
+### `python scripts/jobs4.py | head`
 
 .left[
 ```python
 import signal
 
 def handle_sigpipe(signum, frame):
+    sys.stderr.close()
     sys.exit(0)
 
 signal.signal(signal.SIGPIPE, handle_sigpipe)
 ```
+]
+
+???
+
+When all file descriptors pointing to the read end of the pipe have been closed, our Python script is sent a signal called SIGPIPE, indicating that the pipe that we were writing to is closed and we should shut down.
+
+All we need to do in our script is write and register a signal handler which will suppress any more stderr output (which is a different output file descriptor where errors are sent) and simply end the program when we receive the SIGPIPE signal.
+
+
+---
+
+
+RUN python scripts/jobs4.py | head | column -t
+
+???
+
+Now we're exception free, let's take a look at some more handy unix tools and the problems that they can solve.
+
+
+---
+
+
+.left[
+```
+RUN python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -n3 | head  # TODO requires flow freq
+RUN python scripts/jobs4.py | cut -f5 | sort | uniq
+```
+]
+
+???
+
+What are the most frequently-run jobs?
+Which resource classes are used?
+
+
+---
+
+
+Job graph
+
+
+---
+
+
+Downstream grain
+
+
+---
+
+
+All datasets downstream of a job that uses small resources?
+
+Filter jobs that use small resources and produce output
+From output, we could get all downstream
+
+Need join
+
+
+---
+
+
+Join!
+
+
+---
+
+
+Talk about data poisioning and the need for beskope queries.
+
+
+---
+
+
+.left[
+###- *`head`* to truncate output for prototyping
+###- *`column -t`* to pretty-print a table
+###- *`grep`* and *`awk`* to filter rows
+###- *`wc -l`* to count (filtered) rows
+###- *`sort`* to sort output
+###- *`uniq`* to filter out duplicate rows
+###- *`join`* to join two sorted files on a column
 ]
 
 
@@ -472,9 +593,42 @@ signal.signal(signal.SIGPIPE, handle_sigpipe)
 
 ## Testing
 
+.left[
 - Move as much code into your models and unit test there
 - Script should produce parseable output; mock its data and parse it
 - Integration test against real data (answer a Q that should remain stable)
+]
+
+
+---
+
+
+## Performance
+
+.left[
+- cProfile
+- generators for head
+- pandas for full output
+- use options to enable/disable rendering expensive cols
+- cache output (e.g. joblib.memory)
+]
+
+
+---
+
+
+## References
+
+.left[
+- `https://www.slideshare.net/shopifyInvestors/investor-deck-q3-2017-81481241`
+- `https://www.slideshare.net/SolmazShahalizadeh/building-a-financial-data-warehouse-a-lesson-in-empathy`
+- `https://brandonwamboldt.ca/how-linux-pipes-work-under-the-hood-1518/`
+]
+
+## Thanks
+
+Karl Taylor, Aaron Olsen, and the<br>Data Acceleration team @ Shopify
+
 
     </textarea>
     <link rel="stylesheet" href="tomorrow-night-blue.css">
