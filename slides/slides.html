@@ -13,6 +13,9 @@
         color: #FFFFFF;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-code {
+        font-size:0.8em;
+      }
       .remark-slide-content {
         background-color: #223274;
         color: #FFFFFF;
@@ -29,6 +32,9 @@
       .remark-slide-content h1 {
         font-size: 1.5em;
       }      
+      .remark-slide-content a {
+        color: #FFFFFF;
+      }
       .remark-slide-container {
       visibility: hidden;
           display: initial;
@@ -41,7 +47,7 @@
         font-style:normal;
       }
       .statistic {
-        font-size: 85pt;
+        font-size: 2em;
         font-weight: bold;
         color: #44bebf;
       }
@@ -76,9 +82,9 @@ class: center, middle
 
 
 # Navigating a Data Warehouse via CLI
-
-<div height="30%">Chris Fournier (@cfournie)</div>
 <br>
+<span style="font-size: 0.8em">Chris Fournier (@cfournie)</span>
+<br><br><br>
 <img src="./shopify_monotone_white.svg" height="70pt" />
 
 ???
@@ -117,7 +123,7 @@ Our analysts use it to answer questions about the performance of Shopify as a bu
 ---
 
 
-### Gross Merchandise Volume
+<h3 style="margin: 0.5em 0 0.5em 0">Gross Merchandise Volume</h3>
 
 <img src="./gmv.png" height="440pt" />
 
@@ -175,18 +181,18 @@ The batch jobs that we run in our warehouse are written mostly in Python by our 
 ## Development speed
 
 .center[
-<span style="float:left;">
+<span style="float:left; font-size: 0.9em">
 <span class="statistic">1100+</span><br>
-ETL job implementations<br>(as of Nov 1017)
+ETL jobs<br>(as of Nov 1017)
 </span>
 
-<span style="float:right;">
+<span style="float:right; font-size: 0.9em">
 <span class="statistic">15.2</span><br>
-Deploys per day in 2017 on<br>average (±8.6 std dev)
+Deploys per day<br>on avg (±8.6 std dev)
 </span>
 ]
 
-<br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br>
 
 
 
@@ -233,34 +239,26 @@ So how can we gain a bit more speed and access to more metadata to search throug
 ---
 
        
-### Search YAML flow and job definitions
+### Search YAML schedule definitions
 
 
-<div style="margin: auto;width: 80%">
+<div style="margin: auto;width: 100%;font-size: 0.85em">
 .left[
 ```yaml
-order-transaction-states-incremental:
+gross-merchandise-volume-flow:
   frequency: 2h
+  owner: team@example.com
 
-extract-orders:
-    resource_class: medium
-    executable: jobs/extract_orders.py
-    inputs: ['orders@database']
-    output: /data/raw/orders/
-
-  ...
-
-  compute-gmv:
+  compute-gmv-job:
     resource_class: xxlarge
     executable: jobs/compute_gmv.py
-    inputs: ['/data/raw/orders/', '/data/raw/transactions/']
+    inputs:
+      - /data/raw/orders/
+      - /data/raw/transactions/
     output: /data/frontroom/gmv-facts/
-
-  load-gmv:
-    resource_class: xxlarge
-    executable: jobs/loader.py
-    inputs: /data/frontroom/gmv-facts/
-    output: shopify.gmv_facts@database
+  
+  extract-orders-job:
+    ...
 ```
 ]
 </div>
@@ -281,20 +279,22 @@ But except for finding details for specific jobs and some basic aggregate statis
 
 ### Tables of metadata
 
+<div style="font-size:0.6em">
 .left[
-Workflow (or group)   | Freq. (hours) | Job     | Resources | Etc.
+Workflow (group)   | Freq. (h) | Job     | Resources | Etc.
 --------------------- | ------------- | ------- | --------- | ---
-abiding-poetry        |6  |complex-a            |small    | ...
-abiding-poetry        |6  |defeated-obligation  |medium   |
+abiding-poetry        |6  |comp            |small    | ...
+abiding-poetry        |6  |defeated  |medium   |
 abiding-poetry        |6  |kind-big             |xxlarge  |
-abiding-poetry        |6  |load-complex-a       |small    |
+abiding-poetry        |6  |load-com       |small    |
 abiding-poetry        |6  |load-kind-big        |xlarge   |
 abiding-poetry        |6  |swift-energy         |medium   |
-confused-independent  |7  |eight-studio         |small    |
-confused-independent  |7  |load-eight-studio    |small    |
-confused-independent  |7  |load-two-original    |small    |
-confused-independent  |7  |luxuriant-medium     |xlarge   |
+confused-indy  |7  |eight         |small    |
+confused-indy  |7  |load-eight    |small    |
+confused-indy  |7  |load-two-orig    |small    |
+confused-indy  |7  |luxury-med     |xlarge   |
 ]
+</div>
 
 <br><br><br>
 
@@ -313,7 +313,7 @@ Thankfully we already have libraries that parse this YAML to update our schedule
 
 ### Parse and print metadata
 
-<div style="margin: auto;width: 60%">
+<div style="margin: auto;width: 100%">
 .left[
 ```python
 for flow in flows:
@@ -348,9 +348,11 @@ So, what does this table look like?
 ---
 
 
-`python scripts/jobs1.py`
-
 ???
+
+```shell
+python jobs1.py
+```
 
 Garbage.
 
@@ -381,14 +383,23 @@ So let's try something similar, but this time let's omit inputs and I'll show yo
 ---
 
 
+???
 
-RUN python scripts/jobs2.py | column -t
+```shell
+python jobs2.py | column -t
+```
 
- 
+
 ---
 
 
-### `python scripts/jobs2.py | column -t`
+### Tab-separate and pretty-print
+.left[
+```shell
+python jobs2.py | column -t
+```
+]
+<br>
 
 ???
 
@@ -405,14 +416,22 @@ This is some of the magic that Linux/BSD/OSX can provide you so that you can com
 ---
 
 
-### `python scripts/jobs2.py | column -t`
-<br>
+## What is piping?
+.left[
+```shell
+python jobs2.py | column -t
+```
+]
 
 <div class="mermaid">
 graph LR
-    A[<em><b>python scripts/jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-->C(pipe file)
+    A[<em><b>python jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-->C(pipe file)
     C-->D[<em><b>column -t</b></em><br>stdin=pipefile<br>stdout=stdout]
 </div>
+
+<span style="font-size:0.5em; opacity:0.5">
+https://brandonwamboldt.ca/how-linux-pipes-work-under-the-hood-1518/
+</span>
 
 ???
 
@@ -435,9 +454,11 @@ Let's take this further!
 ---
 
 
-RUN python scripts/jobs3.py | cut -f1 -f3 -f4 | column -t
-
 ???
+```shell
+python jobs3.py | cut -f1 -f3 -f4 | column -t
+```
+
 Let's change our python program a little and output tab separators instead of spaces. Why?
 Because a lot of the unix tools assume that fields i.e. columns are tab-separated.
 
@@ -453,16 +474,14 @@ And we accomplished this by not just piping to one program, but two. We can use 
 ---
 
 
-.left[
-```
-RUN python scripts/jobs3.py | wc -l
-RUN python scripts/jobs3.py | grep large | column -t
-RUN python scripts/jobs3.py | awk '$4 == "large"' | column -t
-RUN python scripts/jobs3.py | head
-```
-]
-
 ???
+```shell
+python jobs3.py | wc -l
+python jobs3.py | grep large | column -t
+python jobs3.py | awk '$4 == "large"' | column -t
+python jobs3.py | head
+```
+
 Let's take this further and flex some more of our rumoured analytical power here.
 
 How do we answer questions like:
@@ -481,13 +500,19 @@ Uh oh!  There's a garbled stack trace in there. What happened?
 ---
 
 
-### `python scripts/jobs3.py | head`
+## Piping to `head`
 
-<div style="margin: auto;width: 70%">
+.left[
+```shell
+python jobs3.py | head
+```
+]
+
+<div style="margin: auto;width: 100%; font-size: 0.85em">
 .left[
 ```
 Traceback (most recent call last):
-  File "scripts/jobs3.py", line 13, in <module>
+  File "jobs3.py", line 13, in <module>
     job.output
 BrokenPipeError: [Errno 32] Broken pipe
 ```
@@ -512,9 +537,9 @@ Thankfully, the OS provides us a way to tell that we should stop writing.
 ---
 
 
-### `python scripts/jobs4.py | head`
+## Handling SIGPIPE
 
-<div style="margin: auto;width: 70%">
+<div style="margin: auto;width: 100%;font-size:0.9em">
 .left[
 ```python
 import signal
@@ -538,9 +563,10 @@ All we need to do in our script is write and register a signal handler that clos
 ---
 
 
-RUN python scripts/jobs4.py | head | column -t
-
 ???
+```shell
+python jobs4.py | head | column -t
+```
 
 Now we're exception free, let's take a look at some more handy unix tools and the problems that they can solve.
 
@@ -548,15 +574,13 @@ Now we're exception free, let's take a look at some more handy unix tools and th
 ---
 
 
-.left[
-```
-RUN python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -k2n | head
-RUN python scripts/jobs4.py | cut -f4 | sort | uniq
-RUN python scripts/jobs4.py | cut -f4 | sort | uniq -c
-```
-]
-
 ???
+
+```shell
+python jobs4.py | cut -f1-3 | sort -k2n | head
+python jobs4.py | cut -f4 | sort | uniq
+python jobs4.py | cut -f4 | sort | uniq -c
+```
 
 There's a `sort` utility to sort by column which can even interpret text as numbers which we can use to answer:
 
@@ -574,31 +598,27 @@ Both uniqe and sort are useful on their own, but where they really shine is in a
 ---
 
 
-### Dataset dependencies
+### Dataset dependencies & paths
 
 <div class="mermaid">
 graph LR
     A(Raw Orders)-->C(GMV per Shop)
     B(Raw Transactions)-->C
-    B-->D(Transactions per Shop)
-    D-->E(Transactions per Shop<br>and Gateway)
+    B-->D(Transactions<br>per Shop)
+    D-->E(Transactions per Shop<br>& Gateway)
 </div>
 
-<br>
-
-<div style="margin: auto;width: 80%">
+<div style="margin: auto;width: 100%;font-size:0.6em">
 .left[
 Start                 | End
 --------------------- | --------------
 Raw Orders            | GMV per Shop
 Raw Transactions      | GMV per Shop
 Raw Transactions      | Transactions per Shop
-Raw Transactions      | Transactions per Shop and Gateway
-Transactions per Shop | Transactions per Shop and Gateway
+Raw Transactions      | Transactions per Shop & Gateway
+Transactions per Shop | Transactions per Shop & Gateway
 ]
 </div>
-
-<br><br><br>
 
 ???
 
@@ -623,19 +643,22 @@ For example we can see that there is a path from:
 ---
 
 
-<div style="margin: auto;width: 80%">
+#### What is *downstream* of a *bad dataset*?
+<div style="margin: auto;width: 100%;font-size:0.9em">
 .left[
 ```shell
-python scripts/downstream.py | awk '$1 == "dataset"'
+python downstream.py | awk '$1 == "dataset"'
 ```
 ]
 </div>
+<br>
+
 
 ???
 
 We can then use `awk` to ask:
 
-"Which datasets are downstream of X?"
+"Which datasets are downstream of this bad dataset?"
 
 We could have also added columns so that we can see which team owns each dataset and the name of the producing job so that we can take actions on this information, like:
 
@@ -649,12 +672,16 @@ Now let's imagine a more alarming scenario than just one bad dataset posioning d
 ---
 
 
-<div style="margin: auto;width: 90%">
+#### Can we join *bad datasets* to *downstreams*?
+<div style="margin: auto;width: 100%;font-size: 1em">
 .left[
 
 ```shell
-python scripts/jobs4.py | awk '$2 < 8 && $4 == "small"' > bad_jobs
-python scripts/downstream.py > all_downstream
+python jobs4.py
+  | awk '$2 < 8 && $4 == "small"'
+  > bad_jobs
+
+python downstream.py > all_downstream
 ```
 ]
 </div>
@@ -675,7 +702,8 @@ Can we do that via the CLI?
 ---
 
 
-<div style="margin: auto;width: 40%">
+<h4 style="margin: 0.4em 0 0.4em 0">*`join`* two files</h4>
+<div style="margin: auto;width: 50%; font-size:0.9em">
 <div style="float: left;width: 40%">
 .left[
 ```
@@ -686,7 +714,7 @@ c
 ]
 </div>
 
-<div style="float: right;width: 40%">
+<div style="float: right;width: 50%">
 .left[
 ```
 a	1
@@ -698,9 +726,9 @@ d	4
 </div>
 </div>
 
-<br><br><br><br><br>
+<br><br><br>
 
-<div style="margin: auto;width: 50%">
+<div style="margin: auto;width: 70%; font-size:0.9em">
 .left[
 ```shell
 join -1 1 -2 1 file_a file_b
@@ -708,10 +736,7 @@ join -1 1 -2 1 file_a file_b
 ]
 </div>
 
-<br>
-
-
-<div style="margin: auto;width: 20%">
+<div style="margin: auto;width: 20%;font-size:0.9em">
 .left[
 ```
 a 1
@@ -720,7 +745,6 @@ b 3
 ```
 ]
 </div>
-
 
 
 ???
@@ -737,13 +761,15 @@ If we replace these letters with bad datasets in the first file and a dataset an
 ---
 
 
+### `join` bad *datasets* with *downstream*
 <div style="margin: auto;width: 100%">
 .left[
 
 ```shell
-cat bad_jobs | sort -k5 > sorted_bad_jobs
-cat all_downstream | sort -k1 > sorted_all_downstream
-join -1 5 -2 1 -t $'\t' sorted_bad_jobs sorted_all_downstream > joined
+join -1 5 -2 1 -t $'\t'
+  sorted_bad_jobs sorted_all_downstream
+  > joined
+
 cat joined | cut -f6 | sort | uniq
 ```
 ]
@@ -751,6 +777,13 @@ cat joined | cut -f6 | sort | uniq
 
 ???
 
+```shell
+cat bad_jobs | sort -k5 
+  > sorted_bad_jobs
+
+cat all_downstream | sort -k1
+  > sorted_all_downstream
+```
 
 First, we need to sort the data by the columns that we want to join on. For bar jobs that's the 5th column, with the job output. For all downstream that's the 1st column, the start of each path.
 
@@ -786,16 +819,19 @@ In all of these situations, being able to come up with an expression to filter o
 ---
 
 
+### UNIX tools for tables
+<div style="margin: auto;width: 85%; font-size:0.9em">
 .left[
-###- *`head`* to truncate output for prototyping
-###- *`column -t`* to pretty-print a table
-###- *`grep`* and *`awk`* to filter rows
-###- *`wc -l`* to count (filtered) rows
-###- *`sort`* to sort output
-###- *`uniq`* to filter duplicates / count freqs. (*`-c`*)
-###- *`join`* to join two sorted files on a column
+- *`head`* to truncate
+- *`column -t`* to pretty-print
+- *`grep`* and *`awk`* to filter
+- *`wc -l`* to count
+- *`sort`* to sort
+- *`uniq`* to dedupe / count freqs. (*`-c`*)
+- *`join`* to join sorted files
 ]
-
+</div>
+<br>
 
 ???
 
@@ -817,9 +853,8 @@ Check out the repo link below if you want these slides or to play around with th
 ## Testing
 
 .left[
-- Move as much code into your models and unit test there
-- Script should produce parseable output; mock its data and parse it
-- Integration test against real data (answer a Q that should remain stable)
+- Move script code into modules
+- Scripts produce parseable output
 ]
 
 
@@ -829,28 +864,21 @@ Check out the repo link below if you want these slides or to play around with th
 ## Performance
 
 .left[
-- cProfile
-- generators for head
-- pandas for full output
-- use options to enable/disable rendering expensive cols
-- cache output (e.g. joblib.memory)
+- [`cProfile`](https://docs.python.org/3.6/library/profile.html)
+- Use [generators](https://docs.python.org/3/howto/functional.html#generators) (speeds up `head`)
+- Use [`pandas`](http://pandas.pydata.org/)
+- Make expensive columns flags
+  - `--expensive-col`
+- cache output (e.g. [`joblib.memory`](https://pythonhosted.org/joblib/memory.html))
 ]
 
 
 ---
 
 
-## References
-
-.left[
-- `https://www.slideshare.net/shopifyInvestors/investor-deck-q3-2017-81481241`
-- `https://www.slideshare.net/SolmazShahalizadeh/building-a-financial-data-warehouse-a-lesson-in-empathy`
-- `https://brandonwamboldt.ca/how-linux-pipes-work-under-the-hood-1518/`
-]
-
 ## Thanks
 
-Karl Taylor, Aaron Olsen, and the<br>Data Acceleration team @ Shopify
+Data Acceleration team @ Shopify
 
 
     </textarea>
