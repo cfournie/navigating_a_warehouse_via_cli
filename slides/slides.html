@@ -4,7 +4,9 @@
     <title>Title</title>
     <meta charset="utf-8">
     <style>
-      body { font-family: 'Roboto'; }
+      body {
+        font-family: 'Roboto';
+      }
       h1, h2, h3 {
         font-family: 'Roboto';
         font-weight: bold;
@@ -15,7 +17,18 @@
         background-color: #223274;
         color: #FFFFFF;
         background-size: auto 100%;
+        font-size: 2.7em;
+        padding: 1em 2em 1em 2em;
       }
+      .remark-slide-content h3 {
+        font-size: 1em;
+      }
+      .remark-slide-content h2 {
+        font-size: 1.2em;
+      }
+      .remark-slide-content h1 {
+        font-size: 1.5em;
+      }      
       .remark-slide-container {
       visibility: hidden;
           display: initial;
@@ -37,6 +50,10 @@
         bottom: 12px;
         left: 20px;
         opacity: .5;
+        font-size: 0.55em;
+      }
+      .remark-slide-number {
+        font-size: 0.55em;
       }
       td, th {
         padding: 0 6pt;
@@ -60,13 +77,9 @@ class: center, middle
 
 # Navigating a Data Warehouse via CLI
 
+<div height="30%">Chris Fournier (@cfournie)</div>
 <br>
-
-Chris Fournier (@cfournie)
-
-<br/><br/>
-
-<img src="./shopify_monotone_white.svg" width="150pt" />
+<img src="./shopify_monotone_white.svg" height="70pt" />
 
 ???
 
@@ -104,9 +117,9 @@ Our analysts use it to answer questions about the performance of Shopify as a bu
 ---
 
 
-### Gross Merchandise Volume (GMV)
+### Gross Merchandise Volume
 
-<img src="./gmv.png" height="480pt" />
+<img src="./gmv.png" height="440pt" />
 
 ???
 
@@ -134,13 +147,13 @@ class: center, middle
 
 ## Batch jobs
 
-### (E)xtract, (T)ransform, and (L)oad
+### (E)xtract (T)ransform (L)oad
 
-<div class="mermaid">
+<div class="mermaid" margin>
 graph LR
-    A(Extract<br>Orders)-- Raw Orders -->C(Transform into<br>GMV per Shop)
-    B(Extract<br>Transactions)-- Raw Transactions -->C
-    C-- GMV per Shop -->D(Load to<br>a Database)
+    A(Extract<br>Orders)-->C(Transform to<br>GMV per Shop)
+    B(Extract<br>Transactions)-->C
+    C-->D(Load to Database)
 </div>
 
 <br><br><br>
@@ -397,8 +410,8 @@ This is some of the magic that Linux/BSD/OSX can provide you so that you can com
 
 <div class="mermaid">
 graph LR
-    A[<em><b>python scripts/jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-- write -->C(pipe file)
-    C-- read-->D[<em><b>column -t</b></em><br>stdin=pipefile<br>stdout=stdout]
+    A[<em><b>python scripts/jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-->C(pipe file)
+    C-->D[<em><b>column -t</b></em><br>stdin=pipefile<br>stdout=stdout]
 </div>
 
 ???
@@ -847,7 +860,12 @@ Karl Taylor, Aaron Olsen, and the<br>Data Acceleration team @ Shopify
     <script src="remark.min.js"></script>
 
     <script src="./mermaid.js"></script>
-    <script>mermaid.initialize({startOnLoad:true});</script>
+    <script>mermaid.initialize({
+      startOnLoad:true,
+      flowchart:{
+        htmlLabels:true
+      }
+    });</script>
     
     <script>
       var slideshow = remark.create({
@@ -855,6 +873,7 @@ Karl Taylor, Aaron Olsen, and the<br>Data Acceleration team @ Shopify
         // Default: '4:3'
         // Alternatives: '16:9', ...
         ratio: '4:3',
+        //ratio: '16:9',
 
       highlightLanguage: 'python',
       highlightStyle: 'tomorrow-night-blue',

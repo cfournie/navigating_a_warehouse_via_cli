@@ -9729,6 +9729,7 @@ function createEdgePaths(selection, g, arrows) {
         .attr("marker-end", function() {
           return "url(#" + edge.arrowheadId + ")";
         })
+        .attr("stroke-width", "5")
         .style("fill", "none");
 
       util.applyTransition(domEdge, g)
