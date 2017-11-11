@@ -96,16 +96,15 @@ background-repeat: no-repeat;
 
 ???
 
-The specific team that I work on develops software for and maintains a data warehouse, or in other words a platform used to collect, store, analyze, and report on data outside of your web app or other operational systems.
+The specific team that I work on develops software for and maintains a data warehouse, or a platform used to collect, store, analyze, and report on data collected from our systems.
 
-
-Our anaylsts us it to answer questions about the performance of Shopify as a business, our products, and our features.
+Our analysts use it to answer questions about the performance of Shopify as a business, our products, and our features.
 
 
 ---
 
 
-### GMV
+### Gross Merchandise Volume (GMV)
 
 <img src="./gmv.png" height="480pt" />
 
@@ -113,13 +112,15 @@ Our anaylsts us it to answer questions about the performance of Shopify as a bus
 
 One example of a question that we try to answer for Shopify as a whole is:
 
-"What is the total value of everything that has been sold through our platform?"
+"What is the total value of everything sold through our platform?"
 
-We call that gross merchandise value (or GMV) and that's one of the metrics that we use as a company to gauge our success.
+Or Gross Merchandise Volume (GMV).
+
+That's one of the metrics that we use as a company to gauge our success.
 
 This is not a trivial number to calculate given the volume of orders and transactions that we process and the logic that we use to break this number down by payment gateway, industry, monthly recurring revenue, etc. In 2016 alone we had over $15 billion dollars worth of GMV and that's a lot of rows. We're also continuously processing data to keep these numbers up to date.
 
-But from a broad techincal perspective, how do we make this dataset?
+But from a broad techincal perspective, how do we make this dataset and keep it up to date?
 
 
 Sources:
@@ -147,12 +148,10 @@ graph LR
 
 ???
 
-We predominantly run ETL batch jobs that:
+We predominantly run ETL batch jobs every few hours that:
   - Extract batches of data from operational systems (like MySQL) and store it elsewhere (for example as a dataset called "raw orders")
   - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
   - Load that dataset into a database for analysts to issue queries against and create reports upon
-
-We do all of this in an environment that's separate from where our product runs, i.e. our data warehouse, because our systems have different load and different end goals.  One servers shops, the other servers reports statistics that aggregate data from all shops.  We're not creating transactions and selecting just those that occurred today for one shop, we're reading all transactions over all shops since we last peeked at the data.
 
 The batch jobs that we run in our warehouse are written mostly in Python by our analysts (with the help of our engineers) and the number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
 
@@ -213,7 +212,7 @@ background-repeat: no-repeat;
 
 Hue can also show lists of jobs that are completed or being run by our scheduler, Oozie.
 
-One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or metadata (like the where it reads/writes, which team maintains it, etc.). This is an obstacle when we're trying to explore our jobs and understand how they're structured.
+One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or other metadata (like the where it reads/writes, which team maintains it, etc.). This is an obstacle when we're trying to explore our jobs and understand how they're structured or who to talk to to help us better understamd what they do.
 
 So how can we gain a bit more speed and access to more metadata to search through?
 
@@ -230,7 +229,8 @@ So how can we gain a bit more speed and access to more metadata to search throug
 order-transaction-states-incremental:
   frequency: 2h
 
-  extract-orders:
+extract-orders:
+    resource_class: medium
     executable: jobs/extract_orders.py
     inputs: ['orders@database']
     output: /data/raw/orders/
@@ -254,33 +254,33 @@ order-transaction-states-incremental:
 
 ???
 
-Well we store the definition of our schedule in a YAML file in our git repository, and the version that we have in our master branch is at most 20 minutes newer than what could be running in our production environment, so it's a pretty good analogue for production, and when it's not, we can check out the exact git SHA that our production environment is running.
+All of our jobs are scheduled to run periodically by our scheduler Oozie, but we store the definition of our schedule (and a lot of metadata) in a YAML file in our git repository alongside our batch job implementations. We can just search this file to learn more about our jobs.
 
-We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this YAML has been simplified for brevity but we can see that it runs all of these jobs every 2h, it has an extraction job that produces raw data, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.  We can also see the executable for each job, whic datasets it reads/writs, and how many resources it uses.
+We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this has been simplified for brevity but we can see that it runs all of these jobs every 2h, it has an extraction job that produces raw data, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.  We can also see the executable for each job, which datasets it reads/writes, and how many resources it uses (small, large, xxlarge, etc.). It's easy to find details about specific jobs.
 
 With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
 
-But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs. That's a lot, and when analyzing classes of failures, we'd like to be able to break down that list by some of our job metadata so that we can better understand which jobs are impacted by an issue, e.g., maybe maybe jobs that are scheduled frequently and use a "small" amount of resources are having an issue. It would be useful to find out which ones and how many of them there are.
+But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs. That's a lot of jobs and a lot of relationships between them, and when analyzing classes of failures, we'd like to be able to break down our jobs by their properties so that we can better understand which jobs are impacted by an issue. Maybe maybe jobs that are scheduled frequently and that use a "small" amount of resources are having an issue. Finding them is possible by looking at this YAML file, but not easy.
 
 
 ---
 
 
-### Format YAML as a table
+### Tables of metadata
 
 .left[
-Job                     | Resources      | Executable | Etc.
------------------------ | -------------- | -----------
-cuddly-two              | large          | jobs/cuddly-two.py | ...
-load-cuddly-two         | xxlarge        | jobs/load-cuddly-two.py
-untidy-enthusiasm       | small          | jobs/untidy-enthusiasm.py
-load-untidy-enthusiasm  | large          | jobs/load-untidy-enthusiasm.py
-first-restaurant        | small          | jobs/first-restaurant.py
-load-first-restaurant   | small          | jobs/load-first-restaurant.py
-jazzy-comfortable       | xxlarge        | jobs/jazzy-comfortable.py
-load-jazzy-comfortable  | medium         | jobs/load-jazzy-comfortable.py
-annoyed-morning         | xxlarge        | jobs/annoyed-morning.py
-ubiquitous-emphasis     | large          | jobs/ubiquitous-emphasis.py
+Workflow (or group)   | Freq. (hours) | Job     | Resources | Etc.
+--------------------- | ------------- | ------- | --------- | ---
+abiding-poetry        |6  |complex-a            |small    | ...
+abiding-poetry        |6  |defeated-obligation  |medium   |
+abiding-poetry        |6  |kind-big             |xxlarge  |
+abiding-poetry        |6  |load-complex-a       |small    |
+abiding-poetry        |6  |load-kind-big        |xlarge   |
+abiding-poetry        |6  |swift-energy         |medium   |
+confused-independent  |7  |eight-studio         |small    |
+confused-independent  |7  |load-eight-studio    |small    |
+confused-independent  |7  |load-two-original    |small    |
+confused-independent  |7  |luxuriant-medium     |xlarge   |
 ]
 
 <br><br><br>
@@ -288,11 +288,11 @@ ubiquitous-emphasis     | large          | jobs/ubiquitous-emphasis.py
 
 ???
 
-What we need is the data in this YAML laid out as a table, and we need the ability to filter by columns.
+To more easily filter jobs by frequency and resources we need the data in our YAML files laid out as a table, and we need the ability to filter by columns.
 
-We can't get table directly from the YAML itself. We also can't get any of properties of the job implementations themselves. They're implemented in Python using declarative APIs, and if we instantiated those modules we could learn even more about how they're set up and what they do and make columns out of that information.
+We can't get a table directly from the YAML itself. We also can't get any of properties of the job implementations themselves unless we instantiate them and poke around how they're set up.
 
-Thankfully we already have libraries that parse this YAML and read our implementations to update our scheduler, Oozie. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create the table that we want using a Python script!
+Thankfully we already have libraries that parse this YAML to update our scheduler. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create the table that we want using a Python script!
 
 
 ---
@@ -325,9 +325,9 @@ So let's script this! Let's keep it simple and just read this schedule and to co
 
 So let's iterate over each flow, or group of jobs, and then each job within and print the flow and job information.
 
-Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. This is repeticious, but this is intentional. Usually it would be bad to design a denormalized table like this, but this it will make filtering this table by a flow's properties to get job information a lot easier. Since we primarily care about jobs but we still want to see a flow's properties when queriying jobs, it makes sense to pre-join this table.  Denormalized tables are your friend on the CLI.
+Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. This is repeticious, but this is intentional. Usually it would be bad to design a denormalized table like this, but this it will make filtering by flow properties that jobs inherit easier. Since we primarily care about jobs but we still want query jobs by flow properties, it makes sense to pre-join this table.  Denormalized tables are your friend on the CLI.
 
-I'm sure some of you are a bit dubious of that claim, some DBAs are shaking their heads or are gettting up to leave, and the rest of you are wondering whether we can join tables in bash at all or whether  all of this table talk is just a sick SQL metaphor. Well, stay tuned to find out!
+I'm sure some of you are a bit dubious of that claim, some DBAs are shaking their heads or are gettting up to leave, and the rest of you are wondering whether we can join tables in bash at all or whether all of this talk of tables is just an awful abuse of SQL as a metaphor. Well, stay tuned to find out!
 
 So, what does this table look like?
 
@@ -360,7 +360,7 @@ Well there was a lot of output.
 
 Whitespace was a mess, we couldn't tell where the columns were.
 
-Jobs also have multiple inputs, so we're basically cramming an array of inputs into one cell in this table. Not great. It's almost like having a variable number of columns.
+Jobs also have multiple inputs, so we're basically cramming arrays of inputs into one column in this table. Not great. It's almost like having a variable number of columns.
 
 So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI: column.
 
