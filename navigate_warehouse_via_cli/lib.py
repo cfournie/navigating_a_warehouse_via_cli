@@ -33,7 +33,7 @@ class Flow(typing.NamedTuple):
 
 def create_path(end=None, paths=None):
     def _create_path():
-        adjectives = 1 if end else 2
+        adjectives = 0 if end else 1
         parts = (
             '/data',
             codenamize.codenamize(
@@ -53,7 +53,10 @@ def create_path(end=None, paths=None):
 def create_name(named_objects=None):
     def _create_name():
         return codenamize.codenamize(
-            random.randint(0, sys.maxsize), adjectives=1, join='-'
+            obj=random.randint(0, sys.maxsize),
+            adjectives=0,
+            max_item_chars=8,
+            join='-'
         )
     # Enforce uniqueness
     name = _create_name()
@@ -98,12 +101,15 @@ def generate_schedule(
 
         # Generate jobs that accept initial dataset inputs
         for _ in range(random.randint(1, max_initial_jobs_per_flow)):
+            name = create_name(initial_jobs)
             job = generate_job(
-                name=create_name(initial_jobs),
+                name=name,
                 potential_inputs=datasets,
                 output=create_path(
                     paths=itertools.chain(
-                        datasets, initial_datasets))
+                        datasets, initial_datasets),
+                    end=name
+                )
             )
             initial_jobs.append(job)
             initial_datasets.append(job.output)
@@ -119,7 +125,9 @@ def generate_schedule(
                 potential_inputs=initial_datasets,
                 output=create_path(
                     paths=itertools.chain(
-                        datasets, initial_datasets))
+                        datasets, initial_datasets),
+                    end=name
+                )
             )
             jobs.append(job)
             datasets.append(job.output)
@@ -128,7 +136,7 @@ def generate_schedule(
             loader = generate_job(
                 name=f'load-{name}',
                 potential_inputs=(job.output,),
-                output=f'scheme.{name}@database'
+                output=f'{name}@database'
             )
             jobs.append(loader)
 
