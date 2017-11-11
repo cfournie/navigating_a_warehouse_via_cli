@@ -537,8 +537,9 @@ Now we're exception free, let's take a look at some more handy unix tools and th
 
 .left[
 ```
-RUN python scripts/jobs4.py | python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -k2n | head
+RUN python scripts/jobs4.py | cut -f1 -f2 -f3 | sort -k2n | head
 RUN python scripts/jobs4.py | cut -f4 | sort | uniq
+RUN python scripts/jobs4.py | cut -f4 | sort | uniq -c
 ```
 ]
 
@@ -552,7 +553,9 @@ There's also a `uniq` utility that can take a sorted output and return just the 
 
 "Which resource classes are used?"
 
-Both useful utilities on their own, but where they really shine is in an application that I'll show you next.
+Neat, but how frequently are they used?
+
+Both uniqe and sort are useful on their own, but where they really shine is in an application that I'll show you next.
 
 
 ---
