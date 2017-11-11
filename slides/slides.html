@@ -483,15 +483,15 @@ BrokenPipeError: [Errno 32] Broken pipe
 
 ???
 
-Getting rind of some of the output we can see that what we got was a `BrokenPipeError`.
+Getting rid of some of the output we can see that what we got was a `BrokenPipeError`.
 
 That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it has decided that it has read enough, in this case by default after it sees 10 lines.
 
 Once it sees 10 lines, it closes the read end of the pipe file.
 
-But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file.
+But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file, and that pipe file is soon going to be closed.
 
-When the Python script tries to write its 11th line of output, we get back from the OS an `EPIPE` errors which Python wraps for us as a `BrokenPipeError`.
+When the Python script tries to write output to that closed pipefile, we get back from the OS an `EPIPE` error which Python wraps for us as a `BrokenPipeError`.
 
 Thankfully, the OS provides us a way to tell that we should stop writing.
 
@@ -507,7 +507,7 @@ Thankfully, the OS provides us a way to tell that we should stop writing.
 import signal
 
 def handle_sigpipe(signum, frame):
-    sys.stderr.close()
+    sys.stdout.close()
     sys.exit(0)
 
 signal.signal(signal.SIGPIPE, handle_sigpipe)
@@ -519,7 +519,7 @@ signal.signal(signal.SIGPIPE, handle_sigpipe)
 
 When all file descriptors pointing to the read end of the pipe have been closed, our Python script is sent a signal called SIGPIPE, indicating that the pipe that we were writing to is closed and we should shut down.
 
-All we need to do in our script is write and register a signal handler which will suppress any more stderr output (which is a different output file descriptor where errors are sent) and simply end the program when we receive the SIGPIPE signal.
+All we need to do in our script is write and register a signal handler that closes our write end of the pipe file and exits the program when we receive the SIGPIPE signal.
 
 
 ---
