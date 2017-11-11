@@ -591,7 +591,7 @@ Transactions per Shop | Transactions per Shop and Gateway
 
 Before I delve into that application though, I want to talk about another type of table that we can generate.
 
-Previosly, I showed you a graph of batch jobs and the datasets that they produce. But we can also take the inputs and outputs of those jobs and compose a graph with datasets as nodes and incoming directed edges showing all of the datasets that are used to create that dataset.
+Previously, I showed you a graph of batch jobs and the datasets that they produce. But we can also take the inputs and outputs of those jobs and compose a graph with datasets as nodes and incoming directed edges showing all of the datasets that are used to create that dataset.
 
 For example, "GMV per Shop" is comprised of "Raw Orders" and "Raw Transactions".
 
@@ -779,7 +779,7 @@ In all of these situations, being able to come up with an expression to filter o
 ###- *`grep`* and *`awk`* to filter rows
 ###- *`wc -l`* to count (filtered) rows
 ###- *`sort`* to sort output
-###- *`uniq`* to filter out duplicate rows
+###- *`uniq`* to filter duplicates / count freqs. (*`-c`*)
 ###- *`join`* to join two sorted files on a column
 ]
 
