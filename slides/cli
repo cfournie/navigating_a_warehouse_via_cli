@@ -1,0 +1,7 @@
+1. Create blue terminal and resize it
+2. cd to dir
+3. Screate screen session
+4. pipenv shell
+5. bash
+6. PS1='$ '
+7. create second shell and connect to screen
