@@ -394,13 +394,12 @@ This is some of the magic that Linux/BSD/OSX can provide you so that you can com
 
 ### `python scripts/jobs2.py | column -t`
 <br>
-.left[
-### 1. Call *`pipe(2)`* to create a file (e.g. `pipe:a`)
-### 2. *Fork* twice (for `python` and `column`)
-### 3. Set `python`'s *`stdout`* to *`pipe:a` write* end
-### 4. Set `column`'s *`stdin`* to *`pipe:a` read* end
-### 5. Run `python` & `column` roughly *in parallel*
-]
+
+<div class="mermaid">
+graph LR
+    A[<em><b>python scripts/jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-- write -->C(pipe file)
+    C-- read-->D[<em><b>column -t</b></em><br>stdin=pipefile<br>stdout=stdout]
+</div>
 
 ???
 
@@ -413,9 +412,9 @@ Roughly how this works is:
 4. Bash will set column's stdin (a file descriptor where it reads input from) to the read end of that same pipe file
 5. Both processes run roughly in parrallel and they write and read from the pipe file until they're finished.
 
-So we can make a super simple Python script and let bash and other unix programs massage our output into our desired form, and we get to spread this work over multiple cores.
+So we can make a super simple Python script and let bash and other unix programs massage our output into our desired form, and we get to spread this work over multiple concurrently executing processes.
 
-That's awesome.
+Now we're working with multiple cores and we don't need to handle threading ourselves. That's awesome.
 
 Let's take this further!
 
@@ -434,6 +433,8 @@ Once we do that, let's use a program called `cut` AND the `column` program to sh
 `cut` can be used to say "give me only the first, third, and fourth field (or column) in each row, and then we can pass just those three columns to the `column` program.
 
 What a tidy readable table!
+
+And we accomplished this by not just piping to one program, but two. We can use pipes to chain as many programs together as we want.
 
 
 ---
