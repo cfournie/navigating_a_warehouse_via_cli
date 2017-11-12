@@ -631,7 +631,7 @@ From a table of path starts and ends, we could then use `awk` to ask:
 
 "Which datasets are downstream of this bad dataset?"
 
-This would filter all rows (or paths) that have a start equal to the bad dataset, meaning that each dataset in the end column after this filtering is affected either directly or indirectly by this bad dataset.
+This would filter all rows (or paths) that have a "start" equal to the bad dataset, giving us all affected downstream datasets in the "end" column.
 
 Now let's imagine a more alarming scenario than just a single bad dataset. What if we had many bad datasets all at once? What if we had a bug and we first had to figure out which jobs the bug applies to of our 1100 datasets and then which datasets are downstream of those bad jobs?
 
