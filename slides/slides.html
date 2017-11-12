@@ -595,7 +595,7 @@ There's also a `uniq` utility that can take a sorted output and return just the 
 
 Neat, but how frequently are they used?
 
-Both uniqe and sort are useful on their own, but where they really shine is in an application that I'll show you next.
+Both uniq and sort are useful on their own, but where they really shine is in an application that I'll show you next.
 
 
 ---
@@ -627,15 +627,17 @@ Transactions per Shop | Transactions per Shop & Gateway
 
 Before I delve into that application though, I want to talk about another type of table that we can generate.
 
-Previously, I showed you a graph of batch jobs and the datasets that they produce. But we can also take the inputs and outputs of those jobs and compose a graph with datasets as nodes and incoming directed edges showing all of the datasets that are used to create that dataset.
+Much earlier, I showed you a graph of the GMV jobs. Here's a similar graph but instead of jobs think of these as datasets and the arrows show how datasets on the left feed their data into datasets on the right of each arrow.
 
-For example, "GMV per Shop" is comprised of "Raw Orders" and "Raw Transactions".
+For example, "Raw Orders" and "Raw Transactions" feed into "GMV per Shop". We could then say that "GMV per shop" is downstream of the data in both "Raw Orders" and "Raw Transactions.
 
-This kind of a graph is interesting because we can use it to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally only extract some of our "Raw Orders" and not all of the, then only one other dataset, "GMV per Shop", will also be missing orders.
+We could also day that "Transactions per Shop & Gateway" is downstream of "Raw Transactions" because there is a path between these two datasets in this directed graph.
+
+Datasets in a data warehouse often depend upon each other, and this kind of a graph is useful because we can use it to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally miss some "Raw Orders", then one other dataset, "GMV per Shop", will also miss those orders.
 
 But if instead the "Raw Transactions" dataset is missing some transactions, then 3 other datasets will be missing data, first "GMV per Shop" and "Transactions per Shop" and then transitively "Transactions per Shop and Gateway" would also be missing transactions.
 
-We can represent this in a tabular format with one row per path through this graph with the start and end of the path each being columns.
+We can represent this in a tabular form with one row per path through this graph showing just path starts and ends as columns.
 
 For example we can see that there is a path from:
 - "Raw Transactions" to "GMV per Shop"
@@ -646,11 +648,25 @@ For example we can see that there is a path from:
 ---
 
 
-#### What is *downstream* of a *bad dataset*?
-<div style="margin: auto;width: 100%;font-size:0.9em">
+#### What's *downstream* of a *bad dataset*?
+
+<div style="margin: auto;font-size:0.6em">
+.left[
+Start                 | End
+--------------------- | --------------
+Raw Orders            | GMV per Shop
+Raw Transactions      | GMV per Shop
+Raw Transactions      | Transactions per Shop
+Raw Transactions      | Transactions per Shop & Gateway
+Transactions per Shop | Transactions per Shop & Gateway
+]
+</div>
+
+
+<div style="margin: auto;width: 100%;font-size:1em">
 .left[
 ```shell
-python downstream.py | awk '$1 == "dataset"'
+python downstream.py | awk '$1 == "bad"'
 ```
 ]
 </div>
@@ -659,45 +675,49 @@ python downstream.py | awk '$1 == "dataset"'
 
 ???
 
-We can then use `awk` to ask:
+From a table of path starts and ends, we can then use `awk` to ask:
 
 "Which datasets are downstream of this bad dataset?"
 
-We could have also added columns so that we can see which team owns each dataset and the name of the producing job so that we can take actions on this information, like:
+This would filter all rows (or paths) that have a start equal to the bad dataset, giving us each dataset downstream of it in the "end" column.
 
-- Warn the owning teams of these datasets about missing or erroneous rows;
-- Rebuilding these datasets in topological order to fix missing or erroneous rows; or
+We could also add more than just a path end to this table.
+
+We could also add columns so that we can see which team owns each downstream dataset and the name of the producing job so that we can take actions on this information, like:
+
+- Warn the teams that own or rely on this data that there's a problem;
+- Roll-back and rebuild these datasets in topological order to fix issues; or
 - Stop downstream jobs from running before they pick up bad rows.
 
-Now let's imagine a more alarming scenario than just one bad dataset posioning downstream datasets.
+Now let's imagine a more alarming scenario than just a single bad dataset poisoning everthing downstream of it. What if we had many bad datasets all at once? What if we first had to figure out which of our 1100 datasets were bad and then find everything downstream of them?
 
 
 ---
 
 
-#### Can we join *bad datasets* to *downstreams*?
+#### What is downstream of this *list* of bad datasets?
 <div style="margin: auto;width: 100%;font-size: 1em">
 .left[
 
 ```shell
 python jobs4.py
   | awk '$2 < 8 && $4 == "small"'
-  > bad_jobs
+  > bad
 
-python downstream.py > all_downstream
+python downstream.py > downstream
 ```
 ]
 </div>
 
 ???
 
-Let's say that we'd identified that all jobs that have a "small" resource class and a frequency less than 3 hours have been dropping rows. Maybe we accidentaly added a bug in our software where when we don't have a lot of memory and we run frequently enough we drop rows.
+As an example, let's say that we'd identified that all jobs that have a "small" resource class and a frequency less than 3 hours have been dropping rows. Maybe we accidentaly added a bug in our software where when we don't have a lot of memory and we run frequently enough we lost data.
 
 We can generate a list of jobs that meet those criteria and the datasets that they are poisoning.
 
-We can also generate a list of everything downstream from something.
+And we can also generate a list of everything downstream from something.
 
-If we want to find out which datasets are affected, what we really need is the ability to join these two lists together on the job output and downstream start columns, and because there'd be duplicates, we'd want to `uniq` the output.
+If we want to find out which datasets are affected, what we really need is the ability to join these two lists together on the job output and downstream start columns, and because there'd be duplicate downstream datasets, we'd want to `uniq` the output.
 
 Can we do that via the CLI?
 
@@ -754,69 +774,89 @@ b 3
 
 Yes, yes we can :D
 
-We can use the `join` command to perform an equality join between two sorted files.  It produces one row for each pair of lines that match in the two files.
+We can use the `join` command to perform an equality join between two sorted files.  It's very simply and requires that your data is pre-sorted by the column that you want to join on.
 
-For example, we can take these two files and join them on the first column of each file to produce the result below.
+It produces one row for each pair of lines that have a matching column in the two files.
 
-If we replace these letters with bad datasets in the first file and a dataset and a dataset downstream from it in the second file, we can join them together to produce a list of all datasets downstream of a bad dataset.
+For example, we can take these two files at the top here and join them on the first column of each file to produce the result below:
+
+- `a` is in both files, so join emits a row `a 1`, then
+- `b` is in both files, so join emits a row `b 2`, then
+- `b` is in both files, so join also emits a row `b 3`,
+- `c` is only in one file so we emit no rows, and
+- `d` is only in one file so we emit no rows
+
+If we replace these letters with bad datasets in the first file and the starts and ends of paths between datasets in the second file, then we can join them together to produce a list of all datasets downstream of a bad dataset.
+
+So let's do that!
 
 
 ---
 
 
-### `join` bad *datasets* with *downstream*
-<div style="margin: auto;width: 100%">
-.left[
+???
+
+First let's get a sorted list of bad datasets:
 
 ```shell
-join -1 5 -2 1 -t $'\t'
-  sorted_bad_jobs sorted_all_downstream
-  > joined
-
-cat joined | cut -f6 | sort | uniq
+python jobs4.py | column -t
+python jobs4.py | awk '$2 < 7 && $4 == "small"'
+python jobs4.py | awk '$2 < 7 && $4 == "small"' > a
+cut -f5 a | sort -k1 > b
+column -t b
+wc -l b
 ```
+
+Next, let's get a sorted list of all path starts and ends:
+
+```shell
+python downstream.py | head | column -t
+python downstream.py | sort -k1 > c
+head c
+```
+
+Finally, let's join these two datasets together on the first column:
+```shell
+join -1 1 -2 1 -t $'\t' b c > joined
+head joined
+```
+
+Now we have a list of every path downstream of that list of bad datasets. What we want though is the bad and downstream datasets to get a list of everything that could be affected by this issue. To do that we need to convert these paths to datasets by just taking the path ends, combining them with the list of bad datasets, sorting them, and then getting just the unique list at the end:
+```shell
+cut -f2 joined > d
+sort b d | uniq > affected
+wc -l affected
+wc -l b
+python jobs4.py | wc -l
+```
+
+
+---
+
+
+## How to trace bad data
+<div style="font-size:0.85em">
+.left[
+1. Filter *metadata tables* for bad jobs
+2. Join bad job outputs to *tables of paths*
 ]
 </div>
-
-???
-
-```shell
-cat bad_jobs | sort -k5 
-  > sorted_bad_jobs
-
-cat all_downstream | sort -k1
-  > sorted_all_downstream
-```
-
-First, we need to sort the data by the columns that we want to join on. For bar jobs that's the 5th column, with the job output. For all downstream that's the 1st column, the start of each path.
-
-Once sorted, we can use the `join` command, say that we want to join on bad jobs column 5 and downstream column 1 (and separate by tabs again in the end) and we can save that to a file called joined.
-
-Looking at that file we can see that it added the ends of each path to the last column here
-
-From that file, we can then cut eveything except the 
-
-
----
-
-
-### Script your own tables
-
-### Filter with *`awk`* and use *`join`*
-
+<br>
 
 ???
 
 
-What I showed you here was an artificial scenario using some very simple scripts to make tables, but all of the principles are the same in the version that we use day to day.
+What I showed you here was an artificial scenario using some very simple scripts to make tables, but all of the principles are the same in the version that we use day to day. We find bad datasets and join them against a list of everthing downstream of them to figure our what needs to be fixed.
 
-Using awk to do filtering and then performing joins is essential for us because each of our failures that we've experienced has been unique, for example, we've had to search for all datasets downstream of jobs that:
-- Incorrectly read only Parquet files when using filters
-- Failed to read data from two newly added MySQL shards
-- Read duplicates from a Kafka topic because Kafka was errioneiosly configured to mirror to itself
-- Missed late-arriving data caused by a Kafka partition being unavailable
+This strategy of making tables so that we can filter by job metadata to find jobs that are likely to be affected by a bug has proven invaluable. We've used it to query our jobs to find those that:
 
-In all of these situations, being able to come up with an expression to filter our table of jobs and then join against the downstream table saved us countless minutes or even hours mainly because we prepared all of the metadata beforehand and we have a standardized table to parse. Before that, people were trying to write complicated Python scripts without and coming up with conflicting results. Now our biggest dissagrement is whether to use `grep` or `awk` for filtering.
+- Read and filter by Parquet files by time (because we had a bug where we truncated milliseconds while filtering, dropping 2s of data on every read)
+- We also searched for jobs that read data from a specific MySQL cluster because we forgot to read from two newly added MySQL shards for a short time; and
+- We also looked for jobs that from some Kafka topics because Kafka was errioneiosly configured to mirror to itself and duplicated data (yay infinite data).
+
+Searching for jobs by their metadata to see if a byg applies to them of not does generate false positives, but when tracing bad data, it's better to rebuild a false positive than leave behind a true positive that will continue to provide bad data to downstream jobs.
+
+In all of these situations, being able to come up with an expression to filter our table of jobs and then join against the downstream table saved us countless minutes or even hours mainly because we prepared all of the metadata beforehand and we had a standardized table to parse. Before that, people were trying to write bespoke Python scripts at 3AM to react to an issue and coming up with conflicting results. Now, thanks to these tools, our biggest dissagrement is whether to use `grep` or `awk` for filtering.
 
 
 ---
@@ -905,8 +945,8 @@ Check out the repo link below if you want these slides or to play around with th
         // Set the slideshow display ratio
         // Default: '4:3'
         // Alternatives: '16:9', ...
-        //ratio: '4:3',
-        ratio: '16:9',
+        ratio: '4:3',
+        //ratio: '16:9',
 
       highlightLanguage: 'python',
       highlightStyle: 'tomorrow-night-blue',
