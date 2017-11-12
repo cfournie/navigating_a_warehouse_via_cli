@@ -346,11 +346,13 @@ Thankfully, the YAML files that contain our metadata are in the same repository 
 
 Let's just parse this schedule and print to the console one row of tab-seprated values at a time.
 
-First we can iterate over each flow, or group of jobs, and then each job within. Then we can print the flow name, frequency that it's scheduled in hours, the job name, resources it uses, and its output.
+I can't show you our actual schedule, but I can show you an automatically generated one, and you can visit the git repo at the bottom of these slides and follow along if you like. Here's a snippet from the `jobs.py` script.
+
+First it iterates over each flow, or group of jobs, and then each job within. Then it prints the flow name, schedule frequency (in hours), the job name, resources it uses, and its output.
 
 There's a lot of other metadata that we could print, like the owning team, job implementation file, inputs, etc. but I'm skipping that in this presentation for brevity.
 
-So this will print the information that I just showed you in the previous slide.
+This will print the information that I just showed you in the previous slide.
 
 Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. If this were a database table, it would be bad to design a denormalized table like this, but in the terminal, pre joining what could be two tables like this will make filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
 
@@ -792,7 +794,7 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 ???
 
 
-What I showed you here was an artificial scenario using, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everthing downstream of them to figure our what needs to be fixed.
+What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everthing downstream of them to figure our what needs to be fixed.
 
 This strategy of of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including one where:
 
