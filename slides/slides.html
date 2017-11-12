@@ -89,7 +89,7 @@ class: center, middle
 
 ???
 
-Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you about some simple scripts I wrote that we combine with UNIX tools to navigate our data warehouse.
+Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you about some simple scripts we wrote to navigate our data warehouse and the UNIX tools that we combine them with to get the most out of them.
 
 In case you haven't heard of Shopify...
 
@@ -116,7 +116,7 @@ background-repeat: no-repeat
 
 ???
 
-and the specific team that I work on develops software for and maintains a data warehouse, or a platform used to collect, store, analyze, and report on data collected from our systems.
+And the specific team that I work on develops software for and maintains a data warehouse, or a platform used to collect, store, analyze, and report on data collected from our systems.
 
 Our analysts use it to answer questions about the performance of Shopify as a business, our products, and our features.
 
@@ -138,9 +138,9 @@ Or Gross Merchandise Volume (GMV).
 
 That's one of the metrics that we use as a company to gauge our success.
 
-This is not a trivial number to calculate given the volume of orders and transactions that we process and the logic that we use to break this number down by payment gateway, industry, monthly recurring revenue, etc. In 2016 alone we had over $15 billion dollars worth of GMV and that's a lot of rows. We're also continuously processing data to keep these numbers up to date.
+This is not a trivial number to calculate given the volume of orders and transactions that we process for our merchants and the number of datasets that we joind this dataset against to be able to break this number down by payment gateway, industry, monthly recurring revenue, etc. In 2016 alone we had over $15 billion dollars worth of GMV and that's a lot of rows. We're also continuously processing data to keep these numbers up to date.
 
-But from a broad techincal perspective, how do we make this dataset and keep it up to date?
+But from a broad techincal perspective, how is this data processed?
 
 
 Sources:
@@ -169,11 +169,11 @@ graph LR
 ???
 
 We predominantly run ETL jobs every few hours that:
-  - Extract batches of data from operational systems (like MySQL) and store elsewhere
-  - Transform that extracted data into a datasets that we use to answer specific questions (for example "GMV per shop"), and then
-  - Load that dataset into a database for analysts to issue queries against and create reports upon
+  - Extract batches of data from operational systems (like MySQL)
+  - Transform that extracted data into a datasets (for example "GMV per shop"), and then
+  - Load that into a database for analysts to issue queries against and create reports upon
 
-The batch jobs that we run in our warehouse are written mostly in Python by our analysts (with the help of our engineers) and the number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
+The batch jobs that we run in our warehouse are written mostly in Python on top of PySpark by our analysts (sometimes with the help of our engineers). The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
 
 
 ---
@@ -199,9 +199,9 @@ Deploys per day<br>on avg (±8.6 std dev)
 
 ???
 
-We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
+As of Nov this year we have over 1100+ job implementations, and on average we deploy about 15 different versions of these jobs per day.
 
-The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts maintain their jobs and the data that they produce.
+The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts maintain their jobs and the integrity of the data that they produce.
 
 To help make sure that these jobs are working, and to see which jobs/datasets are affected by bugs that pop up, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
 
@@ -234,9 +234,9 @@ background-repeat: no-repeat
 
 Hue can also show lists of jobs that are completed or being run by our scheduler, Oozie.
 
-One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can't search by job metadata like the where iat job reads/writes, which team maintains it, etc. This is an obstacle when we're trying to explore our jobs and understand how they're structured.
+One downside to using Hue is that we can't search by all of our job metadata, like where a job reads/writes, which team maintains it, how often it runs, what resources it uses, etc. This is an obstacle when we're trying to explore our jobs, understand how they're related, and break them down by their properties to see if a bug applies to them or not.
 
-So how can we gain a bit more speed and access to more metadata to search through?
+So how can we gain access to more metadata to search through?
 
 
 ---
@@ -268,15 +268,24 @@ gross-merchandise-volume-flow:
 
 ???
 
-Well, the metadata that we use to schedule our jobs is all contained within YAML files in our git repository alongside the job implementations. We can just search this file to learn more about our jobs.
+Well, the metadata that we use to schedule our jobs is all contained within YAML files in our git repository alongside the job implementations. These YAML files are at most 20 minutes newer than what's actually running in production, so they're a reliable approximation for the metadata in our scheduler. We can just search these YAML files to learn more about our jobs.
 
-For example this is part of the "gross-merchandise-volume-flow" group of jobs that I showed you a graph of earlier; it runs every 2hours, has a team that owns it, there's a "compute-gmv-job" job that uses a lot of resources, is implemented by this Python script, takes "orders" and "transactions" as input, and outputs some facts about GMV.
+Here's an example of what that YAML looks like. This is the "gross-merchandise-volume-flow" group of jobs that I showed you a graph of earlier, it:
+- Runs every 2 hours
+- Has a team that owns it
+- There's a "compute-gmv-job" job that:
+  - Uses a lot of resources
+  - Is implemented by a specific Python script
+  - Takes "orders" and "transactions" as input, and
+  - Outputs a dataset on GMV
 
-In the same flow there are other jobs defined as well, fo example the "extract-orders-job", and others not shown for brevity.
+There are other jobs that are part of this flow as well, for example the "extract-orders-job", and others not shown for brevity.
 
-With this YAML we can find details on specific jobs and we can use our editor's find tools and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
+Using an editor we can browse this YAML to view metadata, but except for finding details for specific jobs and some basic aggregate statistics (like using your editor's "find" functionality and seeing the number of occurrences of something), there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs.
 
-But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs. When we find a bug, they usually apply to a set of jobs that all share some similar properties. We need to be able to query our schedule for these similar jobs and then find all data that is produced directly or indirectly by them and fix both the jobs and sometimes their data. So far the interfaces that we've seen don't provide much help when querying this metadata for groups of jobs.
+When we find a bug, they usually apply to a set of jobs that all share some similar properties. We need to be able to query our schedule to identify these similar jobs and then find all data that is produced directly or indirectly by them and fix both the jobs and sometimes their data.
+
+YAML has the metadata that we want, but it's not lain out in an easy to consume way.
 
 
 ---
@@ -306,7 +315,7 @@ confused-indy  |7  |luxury-med     |xlarge   |
 
 ???
 
-What we really want is to lay out our metadata into a table so that we can filter it by one or more columns to get all the details of a job or dataset that we need.
+What we really want is to view our job metadata as a table so that we can filter job rows by one or more columns to find the jobs and their datasets affected by a bug.
 
 
 ---
@@ -333,15 +342,19 @@ for flow in flows:
 
 ???
 
-So let's script this! Let's keep it simple and just read this schedule and print to the console one row of tab-seprated values at a time.
+Thankfully, the YAML files that contain our metadata are contained in the same repository as our Python job implementations and scheduling code, so we thought, let's just script this table!
 
-Let's iterate over each flow, or group of jobs, and then for each job print the flow and job information, including: flow name, how often it runs, the job name, the resources it uses, and it's output.
+Let's keep it simple and just read this schedule and print to the console one row of tab-seprated values at a time.
 
-Let's skip the input for now because each job could have multiple inputs and let's also skip the name of the executable just for brevity during this presentation.
+First we iterate over each flow, or group of jobs, and then each job within. Then we print the flow name, frequency that it's scheduled in hours, the job name, resources it uses, and its output.
 
-Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. Usually it would be bad to design a denormalized table like this, but this it will make filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
+There's a lot of other metadata that we could print, like the owning team, job implementation file, inputs, etc. but I'm skipping that in this presentation for brevity.
 
-So, what does this table look like?
+So this will print the information that I just showed you in the previous slide.
+
+Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. If this were a database table, it would be bad to design a denormalized table like this, but in the terminal, pre joining what could be two tables like this will make filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
+
+So, what does this table look like on the CLI?
 
 
 ---
