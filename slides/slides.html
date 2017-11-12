@@ -89,7 +89,7 @@ class: center, middle
 
 ???
 
-Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you today about some simple scripts that I wrote to navigate our data warehouse and how to use UNIX tools to get the most of such scripts.
+Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you about some simple scripts I wrote that we combine with UNIX tools to navigate our data warehouse.
 
 In case you haven't heard of Shopify...
 
@@ -116,7 +116,7 @@ background-repeat: no-repeat
 
 ???
 
-The specific team that I work on develops software for and maintains a data warehouse, or a platform used to collect, store, analyze, and report on data collected from our systems.
+and the specific team that I work on develops software for and maintains a data warehouse, or a platform used to collect, store, analyze, and report on data collected from our systems.
 
 Our analysts use it to answer questions about the performance of Shopify as a business, our products, and our features.
 
@@ -168,12 +168,12 @@ graph LR
 
 ???
 
-We predominantly run ETL batch jobs every few hours that:
-  - Extract batches of data from operational systems (like MySQL) and store it somewhere else
-  - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
+We predominantly run ETL jobs every few hours that:
+  - Extract batches of data from operational systems (like MySQL) and store elsewhere
+  - Transform that extracted data into a datasets that we use to answer specific questions (for example "GMV per shop"), and then
   - Load that dataset into a database for analysts to issue queries against and create reports upon
 
-The batch jobs that we run in our warehouse are written mostly in Python by our analysts (with the help of our engineers) and the number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently. How frequently?
+The batch jobs that we run in our warehouse are written mostly in Python by our analysts (with the help of our engineers) and the number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
 
 
 ---
@@ -201,9 +201,9 @@ Deploys per day<br>on avg (±8.6 std dev)
 
 We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
 
-The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts keep these jobs running reliably.
+The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts maintain their jobs and the data that they produce.
 
-To help make sure that these jobs are working, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
+To help make sure that these jobs are working, and to see which jobs/datasets are affected by bugs that pop up, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
 
 How do we do that?
 
@@ -234,7 +234,7 @@ background-repeat: no-repeat
 
 Hue can also show lists of jobs that are completed or being run by our scheduler, Oozie.
 
-One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can't search by job metadata like the where iat job reads/writes, which team maintains it, etc. This is an obstacle when we're trying to explore our jobs and understand how they're structured or who to notify when they're not working.
+One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can't search by job metadata like the where iat job reads/writes, which team maintains it, etc. This is an obstacle when we're trying to explore our jobs and understand how they're structured.
 
 So how can we gain a bit more speed and access to more metadata to search through?
 
