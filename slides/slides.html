@@ -567,20 +567,20 @@ Both uniq and sort are useful on their own, but where they really shine is in an
 
 <div class="mermaid">
 graph LR
-    A(/data/raw/orders)-->C(/data/gmv_facts)
-    B(/data/raw/transactions)-->C
-    C-->D("gmv_facts@database")
+    A(/data/orders)-->C(/data/gmv_per_shop)
+    B(/data/transactions)-->C
+    C-->D("gmv_per_shop@db")
 </div>
 
-<div style="margin: auto;font-size:0.75em">
+<div style="margin: auto;font-size:0.8em">
 .left[
-Start                    | End
------------------------- | --------------
-`/data/raw/orders`       | `/data/gmv_per_shop`
-`/data/raw/orders`       | `gmv_per_shop@database`
-`/data/raw/transactions` | `/data/gmv_per_shop`
-`/data/raw/transactions` | `gmv_per_shop@database`
-`/data/gmv_facts`        | `gmv_per_shop@database`
+Start                | End
+-------------------- | --------------
+`/data/orders`       | `/data/gmv_per_shop`
+`/data/orders`       | `gmv_per_shop@db`
+`/data/transactions` | `/data/gmv_per_shop`
+`/data/transactions` | `gmv_per_shop@db`
+`/data/gmv_facts`    | `gmv_per_shop@db`
 ]
 </div>
 
