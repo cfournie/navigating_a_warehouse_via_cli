@@ -89,7 +89,7 @@ class: center, middle
 
 ???
 
-Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you today about a simple tool that I wrote in Python to navigate our data warehouse and how to leverage other unix tools to get the most of such scripts.
+Hi, I'm Chris Fournier, I work at Shopify, and I'm going to talk to you today about some simple scripts that I wrote to navigate our data warehouse and how to use UNIX tools to get the most of such scripts.
 
 In case you haven't heard of Shopify...
 
@@ -169,7 +169,7 @@ graph LR
 ???
 
 We predominantly run ETL batch jobs every few hours that:
-  - Extract batches of data from operational systems (like MySQL) and store it elsewhere (for example as a dataset called "raw orders")
+  - Extract batches of data from operational systems (like MySQL) and store it somewhere else
   - Transform it into a dataset that we can use to answer questions about a specific metric (for example "GMV per shop"), and then
   - Load that dataset into a database for analysts to issue queries against and create reports upon
 
@@ -201,7 +201,7 @@ Deploys per day<br>on avg (±8.6 std dev)
 
 We have over 1100+ job implementations, and so far in 2017 on average we deploy about 15 different versions of these jobs per day.
 
-The engineering team that I work on not only maintains the platform and frameworks that these jobs are developed and run on, but also helps our analysts keep these jobs running reliably.
+The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts keep these jobs running reliably.
 
 To help make sure that these jobs are working, we need to be able to navigate this ever-changing set of jobs, their implementations, and the relationships between them to debug issues.
 
@@ -234,7 +234,7 @@ background-repeat: no-repeat
 
 Hue can also show lists of jobs that are completed or being run by our scheduler, Oozie.
 
-One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can only search by a flow's (or group of jobs) name, and not by any of our job names or other metadata (like the where it reads/writes, which team maintains it, etc.). This is an obstacle when we're trying to explore our jobs and understand how they're structured or who to talk to to help us better understamd what they do.
+One downside to using Hue is that it was not meant for the number of jobs that we run; its UI renders sluggishly and we can't search by job metadata like the where iat job reads/writes, which team maintains it, etc. This is an obstacle when we're trying to explore our jobs and understand how they're structured or who to notify when they're not working.
 
 So how can we gain a bit more speed and access to more metadata to search through?
 
@@ -268,13 +268,15 @@ gross-merchandise-volume-flow:
 
 ???
 
-All of our jobs are scheduled to run periodically by our scheduler Oozie, but we store the definition of our schedule (and a lot of metadata) in a YAML file in our git repository alongside our batch job implementations. We can just search this file to learn more about our jobs.
+Well, the metadata that we use to schedule our jobs is all contained within YAML files in our git repository alongside the job implementations. We can just search this file to learn more about our jobs.
 
-We can open the YAML files, look around, for example this is the set of GMV jobs (or the GMV flow) that I showed you earlier: this has been simplified for brevity but we can see that it runs all of these jobs every 2h, it has an extraction job that produces raw data, one job that reads that raw data and outputs a dataset describing GMV, and another that loads that GMV dataset into a database.  We can also see the executable for each job, which datasets it reads/writes, and how many resources it uses (small, large, xxlarge, etc.). It's easy to find details about specific jobs.
+For example this is part of the "gross-merchandise-volume-flow" group of jobs that I showed you a graph of earlier; it runs every 2hours, has a team that owns it, there's a "compute-gmv-job" job that uses a lot of resources, is implemented by this Python script, takes "orders" and "transactions" as input, and outputs some facts about GMV.
 
-With this YAML we can use our editor's find tools (or grep) and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
+In the same flow there are other jobs defined as well, fo example the "extract-orders-job", and others not shown for brevity.
 
-But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs. That's a lot of jobs and a lot of relationships between them, and when analyzing classes of failures, we'd like to be able to break down our jobs by their properties so that we can better understand which jobs are impacted by an issue. Maybe maybe jobs that are scheduled frequently and that use a "small" amount of resources are having an issue. Finding them is possible by looking at this YAML file, but not easy.
+With this YAML we can find details on specific jobs and we can use our editor's find tools and with some regex we can get some aggregate statistics on our schedule, like how many jobs use "xxlarge" resources or how many jobs do we have in total.
+
+But except for finding details for specific jobs and some basic aggregate statistics, there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs. When we find a bug, they usually apply to a set of jobs that all share some similar properties. We need to be able to query our schedule for these similar jobs and then find all data that is produced directly or indirectly by them and fix both the jobs and sometimes their data. So far the interfaces that we've seen don't provide much help when querying this metadata for groups of jobs.
 
 
 ---
@@ -304,11 +306,7 @@ confused-indy  |7  |luxury-med     |xlarge   |
 
 ???
 
-To more easily filter jobs by frequency and resources we need the data in our YAML files laid out as a table, and we need the ability to filter by columns.
-
-We can't get a table directly from the YAML itself. We also can't get any of properties of the job implementations themselves unless we instantiate them and poke around how they're set up.
-
-Thankfully we already have libraries that parse this YAML to update our scheduler. We have APIs that convert this YAML into XML definitions and Oozie API calls, and we can reuse those APIs and create the table that we want using a Python script!
+What we really want is to lay out our metadata into a table so that we can filter it by one or more columns to get all the details of a job or dataset that we need.
 
 
 ---
@@ -321,15 +319,13 @@ Thankfully we already have libraries that parse this YAML to update our schedule
 ```python
 for flow in flows:
     for job in flow.jobs:
-        print(
+        print('\t'.join((
             flow.name,
-            flow.frequency,
+            str(flow.frequency),
             job.name,
             job.resource_class.value,
-            job.executable,
-            job.inputs,
             job.output
-        )
+        )))
 ```
 ]
 </div>
@@ -337,13 +333,13 @@ for flow in flows:
 
 ???
 
-So let's script this! Let's keep it simple and just read this schedule and to compose a table let's just print one job per line.
+So let's script this! Let's keep it simple and just read this schedule and print to the console one row of tab-seprated values at a time.
 
-So let's iterate over each flow, or group of jobs, and then each job within and print the flow and job information.
+Let's iterate over each flow, or group of jobs, and then for each job print the flow and job information, including: flow name, how often it runs, the job name, the resources it uses, and it's output.
 
-Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. This is repeticious, but this is intentional. Usually it would be bad to design a denormalized table like this, but this it will make filtering by flow properties that jobs inherit easier. Since we primarily care about jobs but we still want query jobs by flow properties, it makes sense to pre-join this table.  Denormalized tables are your friend on the CLI.
+Let's skip the input for now because each job could have multiple inputs and let's also skip the name of the executable just for brevity during this presentation.
 
-I'm sure some of you are a bit dubious of that claim, some DBAs are shaking their heads or are gettting up to leave, and the rest of you are wondering whether we can join tables in bash at all or whether all of this talk of tables is just an awful abuse of SQL as a metaphor. Well, stay tuned to find out!
+Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. Usually it would be bad to design a denormalized table like this, but this it will make filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
 
 So, what does this table look like?
 
@@ -354,66 +350,22 @@ So, what does this table look like?
 ???
 
 ```shell
-python jobs1.py
+python jobs.py
 ```
 
-Garbage.
+Not bad, but it's a little hard to distinguish the columns. Is there anything that can help us pretty-print this table?
 
-
----
-
-
-
-### *Whitespace* was a mess.
-
-### Jobs have a *variable* number of inputs.
-
-
-
-???
-
-What went wrong?
-
-Well there was a lot of output.
-
-Whitespace was a mess, we couldn't tell where the columns were.
-
-Jobs also have multiple inputs, so we're basically cramming arrays of inputs into one column in this table. Not great. It's almost like having a variable number of columns.
-
-So let's try something similar, but this time let's omit inputs and I'll show you one of my favourite commands to help format output on the CLI: column.
-
-
----
-
-
-???
+Yes, yes there is, there's a handly little tool called `column` that we can use to format our whitespace for us. All we need to do is generate our output and then pipe it to the column program like so:
 
 ```shell
-python jobs2.py | column -t
+python jobs.py | column -t
 ```
 
+And look at that, we have a table that we can look at!
 
----
+But what was that piping wizardry that I just mentioned?
 
-
-### Tab-separate and pretty-print
-.left[
-```shell
-python jobs2.py | column -t
-```
-]
-<br>
-
-???
-
-What did I just do there? Two things:
-
-1. I removed our variable input column
-2. I piped the output of the Python script to another program called "column" and asked it to format the output into a table
-
-What is piping wizardry you might ask?
-
-This is some of the magic that Linux/BSD/OSX can provide you so that you can combine your simple script with many other UNIX tools to create some truly fantastic output.
+This is some of the magic that UNIX-like operating systems provide that you can use to combine your simple script with many other UNIX tools to create some truly fantastic output.
 
 
 ---
@@ -438,64 +390,56 @@ https://brandonwamboldt.ca/how-linux-pipes-work-under-the-hood-1518/
 
 ???
 
-Here's the command that I just ran. I ran my script and its output was piped to the column program.
+Here's the command that I just ran.
 
 Roughly how this works is:
-1. Bash will create a special in-memory pipe file in the pipe filesystem
-2. Bash will then fork twice to create two child processes, one for python and one for column
-3. Bash will set python's stdout (a file descriptor where it writes output to during print) to the write end of the pipe file
-4. Bash will set column's stdin (a file descriptor where it reads input from) to the read end of that same pipe file
-5. Both processes run roughly in parrallel and they write and read from the pipe file until they're finished.
+1. Bash creates a special in-memory pipe file in the pipe filesystem
+2. Bash then forks twice to create two child processes, one for the python program and one for column program
+3. Bash then sets python's stdout (where it writes output to during print) to the write end of the pipe file
+4. Bash then sets column's stdin (where it reads input from) to the read end of that same pipe file
+5. Both processes run roughly in parrallel and they write and read from the pipe file until they're both finished.
 
-So we can make a super simple Python script and let bash and other unix programs massage our output into our desired form, and we get to spread this work over multiple concurrently executing processes.
+This lets us create a super simple Python script that just creates raw output that we can then pipe to other UNIX programs to massage into our desired form, and the bets part is that we get to spread this work over multiple concurrent processes without writing any threading code ;)
 
-Now we're working with multiple cores and we don't need to handle threading ourselves. That's awesome.
-
-Let's take this further!
+All I've shown you so far though is how to show a table. That's still not very useful for navigating our warehouse of 1100 jobs. What other UNIX tools are available to us and what can we use them for?
 
 
 ---
 
 
 ???
+
+Well, for starters, if we want to throw some columns away, there's a tool called cut. We can use that to take our large table and narrow it down to just the flow name and job name columns:
+
 ```shell
-python jobs3.py | cut -f1 -f3 -f4 | column -t
+python jobs.py | cut -f1 -f2
 ```
 
-Let's change our python program a little and output tab separators instead of spaces. Why?
-Because a lot of the unix tools assume that fields i.e. columns are tab-separated.
-
-Once we do that, let's use a program called `cut` AND the `column` program to show a table of just flow andjob names and the resource class.
-
-`cut` can be used to say "give me only the first, third, and fourth field (or column) in each row, and then we can pass just those three columns to the `column` program.
-
-What a tidy readable table!
-
-And we accomplished this by not just piping to one program, but two. We can use pipes to chain as many programs together as we want.
-
-
----
-
-
-???
-```shell
-python jobs3.py | wc -l
-python jobs3.py | grep large | column -t
-python jobs3.py | awk '$4 == "large"' | column -t
-python jobs3.py | head
-```
-
-Let's take this further and flex some more of our rumoured analytical power here.
+That's still just so-far a display-related tool, what about some real analytics, what about filtering?
 
 How do we answer questions like:
 
-"How many jobs do we have? For that we can pipe our output to the `wc` or word count program and ask it to count lines"
+"Which jobs use the large resource class?"
 
-A little more advanced:
+For that we can use a tool called "awk" to filter rows and onlyprint them if they meet certain conditions, such as whether the 4th column contains the string "large".
 
-"Which jobs use the large resource class?" Grep is good for filtering, but notice how in our search for "large" we also included "xlarge" and "xxlarge"? Oops. `awk` is a tool that can address that by specifying exact values to compare to specific columns.
+```shell
+python jobs.py | awk '$4 == "large"' | column -t
+```
 
-Now all of those calls (except wordcount) produced a lot of output, which is difficult to read when your fiddling with these programs and trying to figure out which parameters to use. One way to make prototyping these commands easier is to simply chop that output down to just a few lines or so using `head`. Let's try that.
+"grep" can also be used for filtering, but when you have variable-sized columns, "awk" is a bit more precise.
+
+Now that we have filtering, what about some aggregate statistics? Can we count? Yes we can, using the worc count program to ask how many lines of filtered output that it sees:
+
+```shell
+python jobs.py | awk '$4 == "large"' | wc -l
+```
+
+Some of those calls produced a lot of output, and if our table takes a long time to generate output, maybe we want to just peek at a short bit of its output. For that, we can use the "head" tool to just get the first 10 lines of output.
+
+```shell
+python broken_jobs.py | head
+```
 
 Uh oh!  There's a garbled stack trace in there. What happened?
 
@@ -526,15 +470,13 @@ BrokenPipeError: [Errno 32] Broken pipe
 
 Getting rid of some of the output we can see that what we got was a `BrokenPipeError`.
 
-That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it has decided that it has read enough, in this case by default after it sees 10 lines.
+That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it has decided that it has read enough, in this case after it sees 10 lines, and then it closes the read end of the pipe file.
 
-Once it sees 10 lines, it closes the read end of the pipe file.
+But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file.
 
-But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file, and that pipe file is soon going to be closed.
+If the Python script tries to write output to that pipefile and the OS has clsed it, then we get back from the OS an `EPIPE` error which Python wraps for us as a `BrokenPipeError`.
 
-When the Python script tries to write output to that closed pipefile, we get back from the OS an `EPIPE` error which Python wraps for us as a `BrokenPipeError`.
-
-Thankfully, the OS provides us a way to tell that we should stop writing.
+Thankfully though, the OS provides us a way to tell that we should stop writing.
 
 
 ---
@@ -562,38 +504,36 @@ When all file descriptors pointing to the read end of the pipe have been closed,
 
 All we need to do in our script is write and register a signal handler that closes our write end of the pipe file and exits the program when we receive the SIGPIPE signal.
 
-
----
-
-
-???
-```shell
-python jobs4.py | head | column -t
-```
-
-Now we're exception free, let's take a look at some more handy unix tools and the problems that they can solve.
+Now that we've fixed that, what other UNIX tools are there that can help us use these tables to find types of jobs?
 
 
 ---
 
 
 ???
-
-```shell
-python jobs4.py | cut -f1-3 | sort -k2n | head
-python jobs4.py | cut -f4 | sort | uniq
-python jobs4.py | cut -f4 | sort | uniq -c
-```
 
 There's a `sort` utility to sort by column which can even interpret text as numbers which we can use to answer:
 
 "What are the most frequently-run jobs?"
 
-There's also a `uniq` utility that can take a sorted output and return just the uniq values which we can use to answer:
+```shell
+python jobs.py | cut -f1-3 | sort -k2n | head
+```
 
-"Which resource classes are used?"
 
-Neat, but how frequently are they used?
+There's also a `uniq` utility that can take a sorted output and filter out duplicates which  we can use to answer:
+
+"Which resource classes are used in the schedule?"
+
+```shell
+python jobs.py | cut -f4 | sort | uniq
+```
+
+Neat, but how frequently are they used? Uniq has that covered as well, with one flag, we can also ask for counts.
+
+```shell
+python jobs.py | cut -f4 | sort | uniq -c
+```
 
 Both uniq and sort are useful on their own, but where they really shine is in an application that I'll show you next.
 
@@ -629,7 +569,7 @@ Before I delve into that application though, I want to talk about another type o
 
 Much earlier, I showed you a graph of the GMV jobs. Here's a similar graph but instead of jobs think of these as datasets and the arrows show how datasets on the left feed their data into datasets on the right of each arrow.
 
-For example, "Raw Orders" and "Raw Transactions" feed into "GMV per Shop". We could then say that "GMV per shop" is downstream of the data in both "Raw Orders" and "Raw Transactions.
+For example, "Raw Orders" and "Raw Transactions" feed into "GMV per Shop". We could then say that "GMV per shop" is downstream of the data in both "Raw Orders" and "Raw Transactions".
 
 We could also day that "Transactions per Shop & Gateway" is downstream of "Raw Transactions" because there is a path between these two datasets in this directed graph.
 
