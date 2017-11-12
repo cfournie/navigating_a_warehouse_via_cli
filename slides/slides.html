@@ -368,17 +368,19 @@ python jobs.py
 
 Not bad, but it's a little hard to distinguish the columns. Is there anything that can help us pretty-print this table?
 
-Yes, yes there is, there's a handly little tool called `column` that we can use to format our whitespace for us. All we need to do is generate our output and then pipe it to the column program like so:
+We could change our Python script to format our columns with variable whitespace so that the table is nice and easy to read. THere are some great libraries for formatting output like this, `tabulate` for example, but let's keep our script simple and just output tab-separated values. It's currently making an on-demand TSV file for us and writing it to stdout, there must be some UNIX tools that can take advantage of this.
+
+Yes, yes there are, for example there's a handly little tool called `column` that we can use to format our whitespace for us. All we need to do is generate our output and then pipe it to the column program like so:
 
 ```shell
 python jobs.py | column -t
 ```
 
-And look at that, we have a table that we can look at!
+And look at that, we have a nicely formatted table that we can look at!
 
 But what was that piping wizardry that I just mentioned?
 
-This is some of the magic that UNIX-like operating systems provide that you can use to combine your simple script with many other UNIX tools to create some truly fantastic output.
+Pipes are the glue that UNIX-like operating systems (like OSX) provide you to combine programs together by passing output through them.
 
 
 ---
@@ -393,8 +395,8 @@ python jobs2.py | column -t
 
 <div class="mermaid">
 graph LR
-    A[<em><b>python jobs2.py</b></em><br>stdin=stdin<br>stdout=pipe file]-->C(pipe file)
-    C-->D[<em><b>column -t</b></em><br>stdin=pipefile<br>stdout=stdout]
+    A[<em><b>python jobs2.py</b></em><br>stdin=stdin<br>stdout=pipefile write]-->C(pipe file)
+    C-->D[<em><b>column -t</b></em><br>stdin=pipefile read<br>stdout=stdout]
 </div>
 
 <span style="font-size:0.5em; opacity:0.5">
@@ -403,18 +405,21 @@ https://brandonwamboldt.ca/how-linux-pipes-work-under-the-hood-1518/
 
 ???
 
-Here's the command that I just ran.
+Here's the command that I just ran. It's generating tab-separated values and passing them directly to the column program which then prints them to `stdout` which we see in our terminal. This chaining is called a pipeline.
 
 Roughly how this works is:
 1. Bash creates a special in-memory pipe file in the pipe filesystem
 2. Bash then forks twice to create two child processes, one for the python program and one for column program
-3. Bash then sets python's stdout (where it writes output to during print) to the write end of the pipe file
+3. Bash then sets python's stdout (where it writes output to) to the write end of the pipe file
 4. Bash then sets column's stdin (where it reads input from) to the read end of that same pipe file
-5. Both processes run roughly in parrallel and they write and read from the pipe file until they're both finished.
+5. Both processes then start and run roughly in parrallel writing and reading from that pipefile, blocking on write when the pipefile is full or blocking on read when it's empty,
+6. Stopping usually when they're done writing or reading output.
 
-This lets us create a super simple Python script that just creates raw output that we can then pipe to other UNIX programs to massage into our desired form, and the bets part is that we get to spread this work over multiple concurrent processes without writing any threading code ;)
+This lets us create a very simple Python script that just creates raw tab-separated output that we can then pipe to other UNIX programs to massage into our desired forms. By keeping the output simple we don't make assumptions about output and don't narrow the possibilities of what we can use this output for; we do one thing and we do that well: create tab-separated metadata.
 
-All I've shown you so far though is how to show a table. That's still not very useful for navigating our warehouse of 1100 jobs. What other UNIX tools are available to us and what can we use them for?
+And the best part of all of this is that with pipelines, we get to spread work over multiple concurrent processes without writing any threading code ;)
+
+Now all I've shown you so far is how to show a table. That's still not very useful for navigating our warehouse of 1100 jobs. What other UNIX tools are available to us and what can we use them for?
 
 
 ---
@@ -425,7 +430,7 @@ All I've shown you so far though is how to show a table. That's still not very u
 Well, for starters, if we want to throw some columns away, there's a tool called cut. We can use that to take our large table and narrow it down to just the flow name and job name columns:
 
 ```shell
-python jobs.py | cut -f1 -f2
+python jobs.py | cut -f1 -f3
 ```
 
 That's still just so-far a display-related tool, what about some real analytics, what about filtering?
@@ -434,27 +439,29 @@ How do we answer questions like:
 
 "Which jobs use the large resource class?"
 
-For that we can use a tool called "awk" to filter rows and onlyprint them if they meet certain conditions, such as whether the 4th column contains the string "large".
+For that we can use a tool called "awk" to filter rows and only print them if they meet certain conditions, such as whether the 4th column contains the string "large".
 
 ```shell
 python jobs.py | awk '$4 == "large"' | column -t
 ```
 
-"grep" can also be used for filtering, but when you have variable-sized columns, "awk" is a bit more precise.
+"grep" can also be used for filtering, but when you have variable-sized columns, "awk" is easier to work with.
 
-Now that we have filtering, what about some aggregate statistics? Can we count? Yes we can, using the worc count program to ask how many lines of filtered output that it sees:
+Now that we have filtering, what about some aggregate statistics? Can we count? Yes we can, using the word count program to ask how many lines of filtered output that it sees.
+
+"How many jobs use the large resource class?"
 
 ```shell
 python jobs.py | awk '$4 == "large"' | wc -l
 ```
 
-Some of those calls produced a lot of output, and if our table takes a long time to generate output, maybe we want to just peek at a short bit of its output. For that, we can use the "head" tool to just get the first 10 lines of output.
+Some of those calls produced a lot of output and sometimes you're going to do something very expensive with that output later, so it would be helpful if we could just peek at a short bit of output. For that, we can use the "head" tool to just get the first 10 lines of output.
 
 ```shell
 python broken_jobs.py | head
 ```
 
-Uh oh!  There's a garbled stack trace in there. What happened?
+Uh oh! There's a garbled stack trace in there. What happened to our table!
 
 
 ---
@@ -483,11 +490,11 @@ BrokenPipeError: [Errno 32] Broken pipe
 
 Getting rid of some of the output we can see that what we got was a `BrokenPipeError`.
 
-That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it has decided that it has read enough, in this case after it sees 10 lines, and then it closes the read end of the pipe file.
+That happened because `head` does something special. Head is reading from the pipe file all the output from the python script up until it sees 10 lines, and then it closes the read end of the pipe file.
 
 But our Python script doesn't know that `head` has had enough and it still wants to write more output to the write end of the pipe file.
 
-If the Python script tries to write output to that pipefile and the OS has clsed it, then we get back from the OS an `EPIPE` error which Python wraps for us as a `BrokenPipeError`.
+If the Python script tries to write output to that pipefile and the OS has closed it, then we get back from the OS an `EPIPE` error which Python wraps for us as a `BrokenPipeError`.
 
 Thankfully though, the OS provides us a way to tell that we should stop writing.
 
@@ -513,9 +520,9 @@ signal.signal(signal.SIGPIPE, handle_sigpipe)
 
 ???
 
-When all file descriptors pointing to the read end of the pipe have been closed, our Python script is sent a signal called SIGPIPE, indicating that the pipe that we were writing to is closed and we should shut down.
+When all file descriptors pointing to the read end of the pipe have been closed, our Python script is sent a signal called SIGPIPE, indicating that the pipe that we were writing to is closed and that we should stop writing to it.
 
-All we need to do in our script is write and register a signal handler that closes our write end of the pipe file and exits the program when we receive the SIGPIPE signal.
+All we need to do in our script is write and register a signal handler that closes the write end of our pipe file (stdout) and exits the program when we receive the SIGPIPE signal.
 
 Now that we've fixed that, what other UNIX tools are there that can help us use these tables to find types of jobs?
 
@@ -525,7 +532,7 @@ Now that we've fixed that, what other UNIX tools are there that can help us use 
 
 ???
 
-There's a `sort` utility to sort by column which can even interpret text as numbers which we can use to answer:
+There's a `sort` utility that we can use to sort text by entire rows or by columns which can even re-interpret text as numbers which we can use to answer:
 
 "What are the most frequently-run jobs?"
 
@@ -534,15 +541,17 @@ python jobs.py | cut -f1-3 | sort -k2n | head
 ```
 
 
-There's also a `uniq` utility that can take a sorted output and filter out duplicates which  we can use to answer:
+There's also a `uniq` utility that can take sorted output and filter out duplicates which we can use to answer:
 
 "Which resource classes are used in the schedule?"
+
+To do that we can use cut to narrow down the output to the column that we're interested in, sort, and then use uniq.
 
 ```shell
 python jobs.py | cut -f4 | sort | uniq
 ```
 
-Neat, but how frequently are they used? Uniq has that covered as well, with one flag, we can also ask for counts.
+Neat, they're all used, that wasn't incredibly useful, but how frequently are they used? Uniq has that covered as well, with one flag, we can also ask for counts of duplicates in a column.
 
 ```shell
 python jobs.py | cut -f4 | sort | uniq -c
