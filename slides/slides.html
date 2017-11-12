@@ -785,8 +785,11 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 ## How to trace bad data
 <div style="font-size:0.85em">
 .left[
-1. Filter *metadata tables* for bad jobs
-2. Join bad job outputs to *tables of paths*
+1. Find *bad jobs/outputs*
+  - Find properties describing a bug
+  - Filter *metadata tables* for affected jobs<br><br>
+2. Find *affected* downstream outputs
+  - Join affected job outputs to *tables of paths* to get downstream
 ]
 </div>
 <br>
