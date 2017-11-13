@@ -140,7 +140,7 @@ That's one of the metrics that we use as a company to gauge our success.
 
 This is not a trivial number to calculate given the volume of orders and transactions that we process for our merchants and what we join this dataset against to be able to break this number down by payment gateway, industry, monthly recurring revenue, etc. In 2016 alone we had over $15 billion dollars worth of GMV and that's a lot of rows. We're also continuously processing data to keep these numbers up to date.
 
-But from a broad techincal perspective, how is this data processed?
+But from a broad technical perspective, how is this data processed?
 
 
 Sources:
@@ -344,7 +344,7 @@ for flow in flows:
 
 Thankfully, the YAML files that contain our metadata are in the same repository as our Python job implementations and scheduling code, so we can reuse our existing parsers and make a script to generate this table!
 
-Let's just parse this schedule and print to the console one row of tab-seprated values at a time.
+Let's just parse this schedule and print to the console one row of tab-separated values at a time.
 
 I can't show you our actual schedule, but I can show you an automatically generated one, and you can visit the git repo at the bottom of these slides and follow along if you like. Here's a snippet from the `jobs.py` script.
 
@@ -370,9 +370,9 @@ python jobs.py
 
 Not bad, but it's a little hard to distinguish the columns. Is there anything that can help us pretty-print this table?
 
-We could change our Python script to format our columns with variable whitespace so that the table is nice and easy to read. THere are some great libraries for formatting output like this, `tabulate` for example, but let's keep our script simple and just output tab-separated values. It's currently making an on-demand TSV file for us and writing it to stdout, there must be some UNIX tools that can take advantage of this.
+We could change our Python script to format our columns with variable whitespace so that the table is nice and easy to read. There are some great libraries for formatting output like this, `tabulate` for example, but let's keep our script simple and just output tab-separated values. It's currently making an on-demand TSV file for us and writing it to stdout, there must be some UNIX tools that can take advantage of this.
 
-Yes, yes there are, for example there's a handly little tool called `column` that we can use to format our whitespace for us. All we need to do is generate our output and then pipe it to the column program like so:
+Yes, yes there are, for example there's a handy little tool called `column` that we can use to format our whitespace for us. All we need to do is generate our output and then pipe it to the column program like so:
 
 ```shell
 python jobs.py | column -t
@@ -414,7 +414,7 @@ Roughly how this works is:
 2. Bash then forks twice to create two child processes, one for the python program and one for column program
 3. Bash then sets python's stdout (where it writes output to) to the write end of the pipe file
 4. Bash then sets column's stdin (where it reads input from) to the read end of that same pipe file
-5. Both processes then start and run roughly in parrallel writing and reading from that pipefile, blocking on write when the pipefile is full or blocking on read when it's empty,
+5. Both processes then start and run roughly in parallel writing and reading from that pipefile, blocking on write when the pipefile is full or blocking on read when it's empty,
 6. Stopping usually when they're done writing or reading output.
 
 This lets us create a very simple Python script that just creates raw tab-separated output that we can then pipe to other UNIX programs to massage into our desired forms. By keeping the output simple we don't make assumptions about output and don't narrow the possibilities of what we can use this output for; we do one thing and we do that well: create tab-separated metadata.
@@ -657,7 +657,7 @@ python downstream.py > downstream
 
 ???
 
-As an example, let's say that we accidentaly added a bug in our software where when we don't have a lot of memory and we run frequently enough our jobs lose data. Let's also say that we've narrowed down the bug to the "small" resource class jobs that run more frequently than 7 hours.
+As an example, let's say that we accidentally added a bug in our software where when we don't have a lot of memory and we run frequently enough our jobs lose data. Let's also say that we've narrowed down the bug to the "small" resource class jobs that run more frequently than 7 hours.
 
 Using "awk" we can filter our table to show just jobs that match those two conditions.
 
@@ -797,11 +797,11 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 ???
 
 
-What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everthing downstream of them to figure our what needs to be fixed.
+What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
 
 This strategy of of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including one where:
 
-- When jobs read and filter Parquet files by time we truncated our millisecond-level precision timstamps to the nearest second, losing up to ~2s of data on every read.
+- When jobs read and filter Parquet files by time we truncated our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
 - Another where jobs reading some MySQL databases were missing rows because they weren't configured to read from two newly added shards.
 - And another where we look for jobs reading certain Kafka topics because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
 
