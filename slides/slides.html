@@ -800,13 +800,13 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 
 What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
 
-This strategy of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including one where:
+This strategy of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including:
 
-- When jobs read and filter Parquet files by time we truncated our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
-- Another where jobs reading some MySQL databases were missing rows because they weren't configured to read from two newly added shards.
-- And another where we look for jobs reading certain Kafka topics because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
+- A bug where only jobs that read and filtered Parquet files by time were truncating our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
+- Another bug where only jobs reading specific MySQL databases were missing rows because they weren't configured to read from two newly added shards.
+- And another bug where jobs reading certain Kafka topics had to be rebuilt because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
 
-This metadata-search strategy does generate false positives, but when tracing bad data, it's better to rebuild a false positive than leave behind a true positive that will continue to provide bad data to downstream jobs.
+This metadata-search strategy does generate false positives, but when tracing bad data, it's better to rebuild a false positive than leave behind a false negative that will continue to provide bad data to downstream jobs.
 
 And in all of these situations, using this strategy and having scripts to generate up to date tables has saved us countless minutes or even hours because we were prepared when PagerDuty woke us up at midnight with standardized tables to parse and replicable results.
 
