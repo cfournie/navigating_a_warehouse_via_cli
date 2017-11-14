@@ -184,7 +184,7 @@ The batch jobs that we run in our warehouse are written mostly in Python on top 
 
 .center[
 <span style="float:left; font-size: 0.9em; width:50%">
-<span class="statistic">1100+</span><br>
+<span class="statistic">3000+</span><br>
 ETL jobs<br>(as of Nov 1017)
 </span>
 
@@ -200,7 +200,7 @@ Deploys per day<br>on avg (±8.6 std dev)
 
 ???
 
-As of Nov this year we have over 1100+ job implementations, and on average we deploy about 15 different versions of these jobs per day.
+As of Nov this year we have over 3000+ job implementations, and on average we deploy about 15 different versions of these jobs per day.
 
 The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts maintain their jobs and the integrity of the data that they produce.
 
@@ -282,7 +282,7 @@ Here's an example of what that YAML looks like. This is the "gross-merchandise-v
 
 There are other jobs that are part of this flow as well, for example the "extract-orders-job", and others not shown for brevity.
 
-Using an editor we can browse this YAML to view metadata, but except for finding details for specific jobs and some basic aggregate statistics (like using your editor's "find" functionality and seeing the number of occurrences of something), there's not a lot of analytical power here, and remember that we have over 1100 jobs that consume each others outputs.
+Using an editor we can browse this YAML to view metadata, but except for finding details for specific jobs and some basic aggregate statistics (like using your editor's "find" functionality and seeing the number of occurrences of something), there's not a lot of analytical power here, and remember that we have over 3000 jobs that consume each others outputs.
 
 When we find a bug, they usually apply to a set of jobs that all share some similar properties. We need to be able to query our schedule to identify these similar jobs and then find all data that is produced directly or indirectly by them and fix both the jobs and sometimes their data.
 
@@ -422,7 +422,7 @@ This lets us create a very simple Python script that just creates raw tab-separa
 
 And the best part of all of this is that with pipelines, we get to spread work over multiple concurrent processes without writing any threading code ;)
 
-Now all I've shown you so far is how to show a table. That's still not very useful for navigating our warehouse of 1100 jobs. What other UNIX tools are available to us and what can we use them for?
+Now all I've shown you so far is how to show a table. That's still not very useful for navigating our warehouse of 3000 jobs. What other UNIX tools are available to us and what can we use them for?
 
 
 ---
@@ -636,7 +636,7 @@ From a table of path starts and ends, we could then use `awk` to ask:
 
 This would filter all rows (or paths) that have a "start" equal to the bad dataset, giving us all affected downstream datasets in the "end" column.
 
-Now let's imagine a more alarming scenario than just a single bad dataset. What if we had many bad datasets all at once? What if we had a bug and we first had to figure out which jobs the bug applies to of our 1100 datasets and then which datasets are downstream of those bad jobs?
+Now let's imagine a more alarming scenario than just a single bad dataset. What if we had many bad datasets all at once? What if we had a bug and we first had to figure out which jobs the bug applies to of our 3000 datasets and then which datasets are downstream of those bad jobs?
 
 
 ---
