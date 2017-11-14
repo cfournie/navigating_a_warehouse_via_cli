@@ -81,7 +81,7 @@ class: center, middle
 ---
 
 
-# Navigating a Data Warehouse via CLI
+# Navigating a Data Warehouse<br>via CLI
 <br>
 <span style="font-size: 0.8em">Chris Fournier (@cfournie)</span>
 <br><br><br>
@@ -246,7 +246,7 @@ So how can we gain access to more metadata to search through?
 ### Search YAML schedule definitions
 
 
-<div style="margin: auto;width: 100%;font-size: 0.85em">
+<div style="margin: auto;width: 70%;font-size: 0.85em">
 .left[
 ```yaml
 gross-merchandise-volume-flow:
@@ -294,7 +294,7 @@ YAML has the metadata that we want, but it's not lain out in an easy to consume 
 
 ### Tables of metadata
 
-<div style="font-size:0.6em">
+<div style="font-size:0.6em;margin: auto;width: 70%;">
 .left[
 Workflow (group)   | Freq. (h) | Job     | Resources | Etc.
 --------------------- | ------------- | ------- | --------- | ---
@@ -324,7 +324,7 @@ What we really want is to view our job metadata as a table so that we can filter
 
 ### Parse and print metadata
 
-<div style="margin: auto;width: 100%">
+<div style="margin: auto;width: 70%">
 .left[
 ```python
 for flow in flows:
@@ -390,11 +390,13 @@ Pipes are the glue that UNIX-like operating systems (like OSX) provide you to co
 
 
 ## What is piping?
+<div style="margin: auto;width:50%;">
 .left[
 ```shell
 python jobs2.py | column -t
 ```
 ]
+</div>
 
 <div class="mermaid">
 graph LR
@@ -472,13 +474,13 @@ Uh oh! There's a garbled stack trace in there. What happened to our table!
 
 ## Piping to `head`
 
+<div style="margin: auto;width:70%;">
 .left[
 ```shell
 python jobs3.py | head
 ```
 ]
 
-<div style="margin: auto;width: 100%; font-size: 0.85em">
 .left[
 ```
 Traceback (most recent call last):
@@ -507,7 +509,7 @@ Thankfully though, the OS provides us a way to tell that we should stop writing.
 
 ## Handling SIGPIPE
 
-<div style="margin: auto;width: 100%;font-size:0.9em">
+<div style="margin: auto;width: 80%;font-size:0.9em">
 .left[
 ```python
 import signal
@@ -575,7 +577,7 @@ graph LR
     C-->D("gmv_per_shop@db")
 </div>
 
-<div style="margin: auto;font-size:0.8em">
+<div style="margin: auto;font-size:0.8em;width:65%">
 .left[
 Start                | End
 -------------------- | --------------
@@ -605,6 +607,8 @@ We can represent these relationships this in a tabular form with one row per pat
 
 #### What's *downstream* of a *bad dataset*?
 
+
+<div style="margin: auto;width: 70%;">
 <div style="margin: auto;font-size:0.75em">
 .left[
 Start                    | End
@@ -617,8 +621,6 @@ Start                    | End
 ]
 </div>
 
-
-<div style="margin: auto;width: 100%;font-size:1em">
 .left[
 ```shell
 python downstream.py | awk '$1 == "bad"'
@@ -643,13 +645,11 @@ Now let's imagine a more alarming scenario than just a single bad dataset. What 
 
 
 #### What is downstream of this *list* of bad datasets?
-<div style="margin: auto;width: 100%;font-size: 1em">
+<div style="margin: auto;width: 95%;font-size: 1em">
 .left[
 
 ```shell
-python jobs.py
-  | awk '$2 < 7 && $4 == "small"'
-  > bad
+python jobs.py | awk '$2 < 7 && $4 == "small"' > bad
 
 python downstream.py > downstream
 ```
@@ -784,7 +784,7 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 
 
 ## How to trace bad data
-<div style="font-size:0.85em">
+<div style="font-size:0.85em;margin: auto;width:78%">
 .left[
 1. Find *bad jobs/outputs*
   - Find properties describing a bug
@@ -817,7 +817,7 @@ Before we had these tools, people were trying to write bespoke Python scripts in
 
 
 ### UNIX tools for tables
-<div style="margin: auto;width: 85%; font-size:0.9em">
+<div style="margin: auto;width: 65%; font-size:0.9em">
 .left[
 - *`head`* to truncate
 - *`column -t`* to pretty-print
@@ -849,10 +849,12 @@ Check out the repo link below if you want these slides or to play around with th
 
 ## Testing
 
+<div style="margin: auto;width: 65%; font-size:0.9em">
 .left[
 - Move script code into modules
 - Scripts produce parseable output
 ]
+</div>
 
 
 ---
@@ -860,14 +862,16 @@ Check out the repo link below if you want these slides or to play around with th
 
 ## Performance
 
+<div style="margin: auto;width: 65%; font-size:0.9em">
 .left[
 - [`cProfile`](https://docs.python.org/3.6/library/profile.html)
 - Use [generators](https://docs.python.org/3/howto/functional.html#generators) (speeds up `head`)
-- Use [`pandas`](http://pandas.pydata.org/)
+- Use [`pandas`](http://pandas.pydata.org/) (and [`numpy`](http://www.numpy.org/))
 - Make expensive columns flags
   - `--expensive-col`
-- cache output (e.g. [`joblib.memory`](https://pythonhosted.org/joblib/memory.html))
+- Cache output (e.g. [`joblib.memory`](https://pythonhosted.org/joblib/memory.html))
 ]
+</div>
 
 
 ---
@@ -899,8 +903,8 @@ Check out the repo link below if you want these slides or to play around with th
         // Set the slideshow display ratio
         // Default: '4:3'
         // Alternatives: '16:9', ...
-        ratio: '4:3',
-        //ratio: '16:9',
+        //ratio: '4:3',
+        ratio: '16:9',
 
       highlightLanguage: 'python',
       highlightStyle: 'tomorrow-night-blue',
