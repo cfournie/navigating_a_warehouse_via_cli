@@ -748,7 +748,7 @@ python jobs.py | column -t
 python jobs.py | awk '$2 < 7 && $4 == "small"'
 python jobs.py | awk '$2 < 7 && $4 == "small"' > a
 cut -f5 a | sort > b
-column -t b
+head b
 wc -l b
 ```
 
@@ -800,7 +800,7 @@ And there you have it, a way to generate metadata tables about jobs/datasets and
 
 What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
 
-This strategy of of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including one where:
+This strategy of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including one where:
 
 - When jobs read and filter Parquet files by time we truncated our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
 - Another where jobs reading some MySQL databases were missing rows because they weren't configured to read from two newly added shards.
