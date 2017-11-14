@@ -117,7 +117,7 @@ And the specific team that I work on develops software for and maintains a data 
 
 ???
 
-... or a platform used to collect, store, analyze, and report on data collected from our systems.
+... or a platform used to collect, store, analyze, and report on data from our systems.
 
 Our analysts use it to answer questions about the performance of Shopify as a business, our products, and our features.
 
@@ -171,7 +171,7 @@ graph LR
 
 We predominantly run ETL jobs every few hours that:
   - Extract batches of data from operational systems (like MySQL)
-  - Transform that extracted data into a datasets (for example "GMV per shop"), and then
+  - Transform that extracted data into a dataset (for example "GMV per shop"), and then
   - Load that into a database for analysts to issue queries against and create reports upon
 
 The batch jobs that we run in our warehouse are written mostly in Python on top of PySpark by our analysts (sometimes with the help of our engineers). The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
@@ -200,7 +200,7 @@ Deploys per day<br>on avg (±8.6 std dev)
 
 ???
 
-As of Nov this year we have over 3000+ job implementations, and on average we deploy about 15 different versions of these jobs per day.
+As of Nov this year we have over 3000+ jobs, and on average we deploy about 15 different versions of these jobs per day.
 
 The engineering team that I work on not only maintains the platform and frameworks that these jobs run on, but also helps our analysts maintain their jobs and the integrity of the data that they produce.
 
@@ -269,13 +269,13 @@ gross-merchandise-volume-flow:
 
 ???
 
-Well, the metadata that we use to schedule our jobs is all contained within YAML files in our git repository alongside the job implementations. These YAML files are at most 20 minutes newer than what's actually running in production, so they're a reliable approximation for the metadata in our scheduler. We can just search these YAML files to learn more about our jobs.
+Well, the metadata that we use to schedule our jobs is all contained within YAML files in our git repository alongside the job implementations. These YAML files are at most 20 minutes newer than what's actually running in production, so they're a reliable approximation for the metadata in our scheduler, and if we need precision, we can check out the exact git sha of what we're running. We can search these YAML files to learn more about our jobs.
 
-Here's an example of what that YAML looks like. This is the "gross-merchandise-volume-flow" group of jobs that I showed you a graph of earlier, it:
+Here's an example of what that YAML looks like. This is the "gross-merchandise-volume-flow" group of jobs that I showed you a graph of earlier. This group of jobs:
 - Runs every 2 hours
-- Has a team that owns it
+- Has a team that owns them
 - There's a "compute-gmv-job" job that:
-  - Uses a lot of resources
+  - Uses a lot of resources (`xxlarge`)
   - Is implemented by a specific Python script
   - Takes "orders" and "transactions" as input, and
   - Outputs a dataset on GMV
@@ -286,7 +286,7 @@ Using an editor we can browse this YAML to view metadata, but except for finding
 
 When we find a bug, they usually apply to a set of jobs that all share some similar properties. We need to be able to query our schedule to identify these similar jobs and then find all data that is produced directly or indirectly by them and fix both the jobs and sometimes their data.
 
-YAML has the metadata that we want, but it's not lain out in an easy to consume way.
+YAML has the metadata that we want, but it's not lain out in an easy to consume way when we're concerned with many jobs at once.
 
 
 ---
@@ -355,9 +355,9 @@ There's a lot of other metadata that we could print, like the owning team, job i
 
 This will print the information that I just showed you in the previous slide.
 
-Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. If this were a database table, it would be bad to design a denormalized table like this, but in the terminal, pre joining what could be two tables like this will make filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
+Note that I'm printing the flow name and frequency repeatedly, once for each of the flow's jobs. If this were a database table, it would be bad to design a denormalized table like this (we'd have a "flows" table and a "jobs" table), but in the terminal, pre joining like this makes filtering jobs by properties that they inherit from flows easier. Denormalized tables are your friend on the CLI.
 
-So, what does this table look like on the CLI?
+So, what does this table look like when we script it?
 
 
 ---
@@ -420,9 +420,9 @@ Roughly how this works is:
 5. Both processes then start and run roughly in parallel writing and reading from that pipefile, blocking on write when the pipefile is full or blocking on read when it's empty,
 6. Stopping usually when they're done writing or reading output.
 
-This lets us create a very simple Python script that just creates raw tab-separated output that we can then pipe to other UNIX programs to massage into our desired forms. By keeping the output simple we don't make assumptions about output and don't narrow the possibilities of what we can use this output for; we do one thing and we do that well: create tab-separated metadata.
+This lets us create a very simple Python script that just creates raw tab-separated output that we can then pipe to other UNIX programs to massage into whatever form we desire. By keeping the output simple, we don't narrow the possibilities of what we can use this output for. We make our script do one thing and do that one thing well: create tab-separated metadata.
 
-And the best part of all of this is that with pipelines, we get to spread work over multiple concurrent processes without writing any threading code ;)
+And the best part about relying on pipelines to adjust our output is that we get to spread work over multiple concurrent processes without writing any threading code ;)
 
 Now all I've shown you so far is how to show a table. That's still not very useful for navigating our warehouse of 3000 jobs. What other UNIX tools are available to us and what can we use them for?
 
@@ -460,7 +460,7 @@ Now that we have filtering, what about some aggregate statistics? Can we count? 
 python jobs.py | awk '$4 == "large"' | wc -l
 ```
 
-Some of those calls produced a lot of output and sometimes you're going to do something very expensive with that output later, so it would be helpful if we could just peek at a short bit of output. For that, we can use the "head" tool to just get the first 10 lines of output.
+Some of those calls produced a lot of output and sometimes you're going to do something very expensive with that output later in your pipeline, so it would be helpful if we could just pass a short bit of output through a pipeline to prototype it. For that, we can use the "head" tool to just get the first 10 lines of output.
 
 ```shell
 python broken_jobs.py | head
@@ -542,7 +542,7 @@ There's a `sort` utility that we can use to sort text by entire rows or by colum
 "What are the most frequently-run jobs?"
 
 ```shell
-python jobs.py | cut -f1-3 | sort -k2n | head
+python jobs.py | sort -k2n | head
 ```
 
 
@@ -595,11 +595,11 @@ Before I delve into that application though, I want to talk about another type o
 
 So far we've been filtering a table of jobs, but these jobs have output datasets and those outputs are often consumed by other "downstream jobs" that produce their own output datasets.
 
-For example, as shown in this graph, "Raw Orders" and "Raw Transactions" datasets feed into the "GMV per Shop" dataset, which is downstream of both of these raw datasets.
+For example, as shown in this graph, "Orders" and "Transactions" datasets feed into the "GMV per Shop" dataset, which itself is loaded into a database, creating another instance of this dataset.
 
-Graphs like this are useful because we can use them to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally miss some "Raw Orders", there are two downstream datasets either directly or indirectly that would also be affected. If only "GMV per Shop" was affected, then we only have a single database to worry about.
+Graphs like this are useful because we can use them to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally miss some "Orders", there are two downstream datasets either directly or indirectly that would also be affected. If only "GMV per Shop" incorrectly produced data, then we only have a single database to worry about.
 
-We can represent these relationships this in a tabular form with one row per path through the graph using path starts and ends as columns. That generates a lot of rows, but it allows us to capture not only direct dependencies, but indirect ones as well.
+We can represent these relationships this in a tabular form with one row per path through the graph using path starts and ends as columns. That generates a lot of rows, but it allows us to capture not only direct, but also indirect dependencies between datasets.
 
 
 ---
@@ -636,9 +636,9 @@ From a table of path starts and ends, we could then use `awk` to ask:
 
 "Which datasets are downstream of this bad dataset?"
 
-This would filter all rows (or paths) that have a "start" equal to the bad dataset, giving us all affected downstream datasets in the "end" column.
+This would filter all rows (or paths) that have a "start" equal to the bad dataset, giving us all affected downstream datasets in the "end" column. Great! We can find all dataset impacted when a single job outputs bad data.
 
-Now let's imagine a more alarming scenario than just a single bad dataset. What if we had many bad datasets all at once? What if we had a bug and we first had to figure out which jobs the bug applies to of our 3000 datasets and then which datasets are downstream of those bad jobs?
+Now let's imagine a more alarming scenario. What if we had many bad datasets all at once? What if we had a bug and we first had to figure out which jobs the bug applies to of our 3000 jobs and datasets that they produce? And then which datasets are downstream of those?
 
 
 ---
@@ -658,9 +658,9 @@ python downstream.py > downstream
 
 ???
 
-As an example, let's say that we accidentally added a bug in our software where when we don't have a lot of memory and we run frequently enough our jobs lose data. Let's also say that we've narrowed down the bug to the "small" resource class jobs that run more frequently than 7 hours.
+As an example, let's say that we identified a bug in our software where jobs that don't use a lot of memory, and that we run frequently, lose data. Let's also say that we've narrowed down the bug to the "small" resource class jobs that run more frequently than 7 hours.
 
-Using "awk" we can filter our table to show just jobs that match those two conditions.
+Using "awk" we can filter our jobs table to only show those that match those two conditions.
 
 That gives us a list of bad jobs and their datasets, but it doesn't tell us what it downstream of all of those bad datasets. We need to join this bad dataset list against the list of downstream paths.
 
@@ -719,7 +719,7 @@ b 3
 
 Yes, yes there is!
 
-We can use the `join` command to perform an equality join between two files.  It's very simple and requires that your data is pre-sorted by the column that you want to join on.
+We can use the `join` command to perform an equality join between two files.  It's a very simple tool and it requires that your data is pre-sorted by the column that you want to join on.
 
 It produces one row for each pair of lines that have a matching column in the two files.
 
@@ -745,7 +745,7 @@ First let's get a sorted list of bad datasets:
 
 ```shell
 python jobs.py | column -t
-python jobs.py | awk '$2 < 7 && $4 == "small"'
+python jobs.py | awk '$2 < 7 && $4 == "small"' | head
 python jobs.py | awk '$2 < 7 && $4 == "small"' > a
 cut -f5 a | sort > b
 head b
@@ -760,7 +760,7 @@ python downstream.py | sort -k1 > c
 head c
 ```
 
-Finally, let's join these two datasets together on the first column:
+Finally, let's join these two tables together on the first column of both:
 ```shell
 join -1 1 -2 1 -t $'\t' b c > joined
 head joined
@@ -804,7 +804,7 @@ This strategy of filtering metadata to find jobs that are affected by a bug has 
 
 - A bug where only jobs that read and filtered Parquet files by time were truncating our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
 - Another bug where only jobs reading specific MySQL databases were missing rows because they weren't configured to read from two newly added shards.
-- And another bug where jobs reading certain Kafka topics had to be rebuilt because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
+- And another bug where jobs reading certain Kafka topics had to have their data rebuilt because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
 
 This metadata-search strategy does generate false positives, but when tracing bad data, it's better to rebuild a false positive than leave behind a false negative that will continue to provide bad data to downstream jobs.
 
@@ -832,7 +832,7 @@ Before we had these tools, people were trying to write bespoke Python scripts in
 
 ???
 
-So to summarize, I showed you the benefit of making some simple scripts to output tables and then I showed you how to use them with these wonderful unix tools.
+So to summarize, I showed you the benefit of making some simple scripts to output tables of metadata and then I showed you how to use them with these powerful unix tools.
 
 ...
 
@@ -841,7 +841,7 @@ And there are so many more that I didn't discuss.
 That's all the time that I have unfortunately,
 
 
-Check out the repo link below if you want these slides or to play around with these scripts, and thanks for listening!
+Check out the repo link below if you want these slides or to play around with these scripts.
 
 
 ---
@@ -885,7 +885,7 @@ Check out the repo link below if you want these slides or to play around with th
 
 ???
 
-Thanks for listening, I'll take questions in the hall afterwards, and if you thought this presentation was cool, get in touch with me, my team is hiring!
+Thanks for listening, I'll take questions in the hall afterwards, and if you thought this presentation was cool, get in touch with me, my team is hiring! Thanks!
 
     </textarea>
     <link rel="stylesheet" href="tomorrow-night-blue.css">
