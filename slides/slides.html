@@ -599,7 +599,7 @@ For example, as shown in this graph, "Orders" and "Transactions" datasets feed i
 
 Graphs like this are useful because we can use them to assess the impact that a mistake in producing one of our datasets would have on our other datasets. For example if we accidentally miss some "Orders", there are two downstream datasets either directly or indirectly that would also be affected. If only "GMV per Shop" incorrectly produced data, then we only have a single database to worry about.
 
-We can represent these relationships this in a tabular form with one row per path through the graph using path starts and ends as columns. That generates a lot of rows, but it allows us to capture not only direct, but also indirect dependencies between datasets.
+We can represent these relationships in a tabular form with one row per path through the graph using path starts and ends as columns. That generates a lot of rows, but it allows us to capture not only direct, but also indirect dependencies between datasets.
 
 
 ---
