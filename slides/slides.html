@@ -777,7 +777,7 @@ python jobs.py | wc -l
 python -c 'print(504 / 590)'
 ```
 
-And there you have it, a way to generate metadata tables about jobs/datasets and how to use UNIX tools to filter and join them to answer real questions about a data warehouse.
+And there you have it, a way to generate metadata tables about jobs/datasets using simple Python scripts and how to use UNIX tools to filter and join those tables to answer real questions about a data warehouse.
 
 
 ---
@@ -806,11 +806,9 @@ This strategy of filtering metadata to find jobs that are affected by a bug has 
 - Another bug where only jobs reading specific MySQL databases were missing rows because they weren't configured to read from two newly added shards.
 - And another bug where jobs reading certain Kafka topics had to have their data rebuilt because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
 
-This metadata-search strategy does generate false positives, but when tracing bad data, it's better to rebuild a false positive than leave behind a false negative that will continue to provide bad data to downstream jobs.
-
 And in all of these situations, using this strategy and having scripts to generate up to date tables has saved us countless minutes or even hours because we were prepared when PagerDuty woke us up at midnight with standardized tables to parse and replicable results.
 
-Before we had these tools, people were trying to write bespoke Python scripts in the middle of the night and coming up with conflicting results. Now, thanks to these tools, repropducible impact analysis is a breeze (and fun)!
+Before we had these tools, people were trying to write bespoke Python scripts in the middle of the night and coming up with conflicting results. Now, thanks to these tools, reproducible impact analysis is a breeze (and fun)!
 
 
 ---
@@ -832,7 +830,7 @@ Before we had these tools, people were trying to write bespoke Python scripts in
 
 ???
 
-So to summarize, I showed you the benefit of making some simple scripts to output tables of metadata and then I showed you how to use them with these powerful unix tools.
+So to summarize, I showed you the benefit of keeping your Python script really simply and instead of adding features to it, leveraging the power of a few UNIX tools to make the most out of your tabular output. Those tools being:
 
 ...
 
