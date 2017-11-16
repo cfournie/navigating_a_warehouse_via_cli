@@ -760,7 +760,7 @@ python downstream.py | sort -k1 > c
 head c
 ```
 
-Finally, let's join these two tables together on the first column of both:
+Now let's join these two tables together on the first column of both:
 ```shell
 join -1 1 -2 1 -t $'\t' b c > joined
 head joined
