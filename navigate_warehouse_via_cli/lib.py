@@ -133,7 +133,7 @@ def generate_schedule(
             datasets.append(job.output)
 
             schema, table = os.path.split(job.output.replace('/data/', '', 1))
-            
+
             # Load this output (don't register it as an eligible input)
             loader = generate_job(
                 name=f'load-{name}',

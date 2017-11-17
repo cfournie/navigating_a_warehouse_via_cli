@@ -1,5 +1,3 @@
-import sys
-
 import navigate_warehouse_via_cli.lib as lib
 
 
