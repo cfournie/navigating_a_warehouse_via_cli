@@ -10,7 +10,7 @@ import pytest
 def assert_path(path):
     assert path.startswith('/data/')
     assert not path.endswith('/')
-    assert path.count('/') == 4
+    assert path.count('/') == 3
     assert all(path.lstrip('/').split('/'))
 
 
@@ -33,7 +33,7 @@ def test_create_path():
 def test_create_name():
     name = lib.create_name()
     assert name
-    assert len(name.split('-')) == 2
+    assert len(name.split('-')) == 1
     assert all(name.split('-'))
 
     # Are the names unique?
@@ -89,7 +89,7 @@ def test_generate_schedule():
 
     # Does this load job have reasonable values?
     assert_job(load_job)
-    assert re.match(r'scheme\.[a-z\-]+@database', load_job.output)
+    assert re.match(r'[a-z]+\.[a-z]+@db', load_job.output)
 
     # Find the 'end' job that created the input for this load job
     end_job = [job for job in flow.jobs if job.output in load_job.inputs]
