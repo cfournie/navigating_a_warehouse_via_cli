@@ -1,0 +1,12 @@
+language: python
+python:
+   - "3.6"
+before_install:
+  - pip install -U pip setuptools
+install:
+  - make install
+script:
+  - make test
+  - make lint
+notifications:
+  email: false
