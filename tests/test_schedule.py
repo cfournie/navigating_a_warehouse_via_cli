@@ -3,7 +3,7 @@ import re
 import sys
 import unittest.mock as mock
 
-import navigate_warehouse_via_cli.lib as lib
+import navigate_warehouse_via_cli.schedule as schedule
 import pytest
 
 
@@ -15,15 +15,15 @@ def assert_path(path):
 
 
 def test_create_path():
-    assert_path(lib.create_path())
-    assert_path(lib.create_path('my-name'))
-    assert lib.create_path('my-name').endswith('/my_name')
+    assert_path(schedule.create_path())
+    assert_path(schedule.create_path('my-name'))
+    assert schedule.create_path('my-name').endswith('/my_name')
 
     # Are the paths unique?
     with mock.patch('random.randint') as mock_randint:
         mock_randint.side_effect = [1, 1, 2]
-        path1 = lib.create_path()
-        path2 = lib.create_path(paths=(path1,))
+        path1 = schedule.create_path()
+        path2 = schedule.create_path(paths=(path1,))
         assert path1 != path2
         mock_randint.assert_has_calls(
             [mock.call(0, sys.maxsize)] * 3
@@ -31,7 +31,7 @@ def test_create_path():
 
 
 def test_create_name():
-    name = lib.create_name()
+    name = schedule.create_name()
     assert name
     assert len(name.split('-')) == 1
     assert all(name.split('-'))
@@ -43,8 +43,8 @@ def test_create_name():
             self.name = name
     with mock.patch('random.randint') as mock_randint:
         mock_randint.side_effect = [1, 1, 2]
-        name1 = lib.create_name()
-        name2 = lib.create_name(named_objects=(Named(name1),))
+        name1 = schedule.create_name()
+        name2 = schedule.create_name(named_objects=(Named(name1),))
         assert name1 != name2
         mock_randint.assert_has_calls(
             [mock.call(0, sys.maxsize)] * 3
@@ -57,7 +57,7 @@ def test_generate_job():
     output = 'my-output'
 
     # Specify output
-    job = lib.generate_job(
+    job = schedule.generate_job(
         name=name,
         potential_inputs=potential_inputs,
         output=output
@@ -68,7 +68,7 @@ def test_generate_job():
 
 
 def test_generate_schedule():
-    flows = lib.generate_schedule()
+    flows = schedule.generate_schedule()
 
     # Pick a flow
     flow = random.choice(list(flows))
@@ -78,7 +78,7 @@ def test_generate_schedule():
     assert flow.jobs
 
     def assert_job(job):
-        assert isinstance(job.resource_class, lib.ResourceClass)
+        assert isinstance(job.resource_class, schedule.ResourceClass)
         assert job.executable.endswith('.py')
         assert job.inputs
         assert job.output
@@ -128,28 +128,28 @@ def test_generate_schedule():
 
 
 def test_generate_schedule_multiple_times():
-    flows = lib.generate_schedule(seed=2)
-    assert flows == lib.generate_schedule(seed=2)
-    assert flows != lib.generate_schedule(seed=3)
+    flows = schedule.generate_schedule(seed=2)
+    assert flows == schedule.generate_schedule(seed=2)
+    assert flows != schedule.generate_schedule(seed=3)
 
 
 @pytest.fixture
 def graph():
-    return lib.create_graph((
-        lib.Flow(name=None, frequency=None, jobs=(
-            lib.Job(
+    return schedule.create_graph((
+        schedule.Flow(name=None, frequency=None, jobs=(
+            schedule.Job(
                 name=None, resource_class=None, executable=None,
                 inputs=('raw-a', 'raw-b'),
                 output='joined-ab'
             ),
-            lib.Job(
+            schedule.Job(
                 name=None, resource_class=None, executable=None,
                 inputs=('raw-b', 'raw-c'),
                 output='joined-bc'
             )
         )),
-        lib.Flow(name=None, frequency=None, jobs=(
-            lib.Job(
+        schedule.Flow(name=None, frequency=None, jobs=(
+            schedule.Job(
                 name=None, resource_class=None, executable=None,
                 inputs=('joined-ab', 'joined-bc'),
                 output='joined-abc'
@@ -178,7 +178,7 @@ def test_create_graph(graph):
 
 
 def test_create_downstream(graph):
-    assert set(lib.create_downstream(graph)) == set([
+    assert set(schedule.create_downstream(graph)) == set([
         ('raw-a', 'joined-ab'),
         ('raw-a', 'joined-abc'),
         ('raw-b', 'joined-ab'),
@@ -193,6 +193,6 @@ def test_create_downstream(graph):
 
 def test_draw(graph, tmpdir):
     path = tmpdir.join('graph.dot')
-    lib.draw(graph, str(path))
+    schedule.draw(graph, str(path))
     assert path.exists()
     assert path.read()

@@ -1,7 +1,7 @@
 import signal
 import sys
 
-import navigate_warehouse_via_cli.lib as lib
+import navigate_warehouse_via_cli.schedule as schedule
 
 
 # pylint: disable=invalid-name
@@ -14,9 +14,9 @@ if __name__ == '__main__':
     signal.signal(signal.SIGPIPE, handle_sigpipe)
 
     # Write table to stdout
-    flows = lib.generate_schedule(seed=2)
-    graph = lib.create_graph(flows)
-    for dataset, downstream in lib.create_downstream(graph):
+    flows = schedule.generate_schedule(seed=2)
+    graph = schedule.create_graph(flows)
+    for dataset, downstream in schedule.create_downstream(graph):
         print('\t'.join((
             dataset, downstream
         )))
