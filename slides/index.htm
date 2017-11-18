@@ -545,8 +545,9 @@ There's a `sort` utility that we can use to sort text by entire rows or by colum
 python jobs.py | sort -k2n | head
 ```
 
+Now we could have done that in Python very easily just using the `sorted` function, but that's costly because it needs to see all of the output and sometimes we don't need sorting (for example when we call `head`). Let's keep our program simple and focues on one job and leave sorting to another program.
 
-There's also a `uniq` utility that can take sorted output and filter out duplicates which we can use to answer:
+Now that we're sorted, how about removing duplicates? There's also `uniq` utility that can take sorted output and filter out duplicates which we can use to answer:
 
 "Which resource classes are used in the schedule?"
 
