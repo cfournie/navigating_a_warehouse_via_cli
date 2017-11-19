@@ -8,7 +8,14 @@ The `slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in H
 
 Code
 ----
-Requires Python 3.6 and either Linux/OSX. Start your virtualenv (e.g. using `pipenv <https://github.com/kennethreitz/pipenv>`_ by runing ``pipenv --python 3.6`` followed by ``pipenv shell``) and then install dependencies using::
+Requires Python 3.6 and either Linux/OSX.
+
+Clone this repository and go into the directory::
+
+    git clone https://github.com/cfournie/navigating_a_warehouse_via_cli.git
+    cd navigating_a_warehouse_via_cli
+
+Start your virtualenv (e.g. using `pipenv <https://github.com/kennethreitz/pipenv>`_ by runing ``pipenv --python 3.6`` followed by ``pipenv shell``) and then install dependencies using::
     
     make install
 
