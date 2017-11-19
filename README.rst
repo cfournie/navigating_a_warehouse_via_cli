@@ -8,10 +8,8 @@ A talk I gave at Pycon Canada 2017, Montréal, QC, Canada.
 
 Code
 ----
-Requires Python 3.6 and either Linux/OSX. To get setup using `pipenv <https://github.com/kennethreitz/pipenv>`_, run::
-
-    pipenv --python 3.6
-    pipenv shell
+Requires Python 3.6 and either Linux/OSX. Start your virtualenv (e.g. using `pipenv <https://github.com/kennethreitz/pipenv>`_ by runing ``pipenv --python 3.6`` followed by ``pipenv shell``) and then install dependencies using::
+    
     make install
 
 
