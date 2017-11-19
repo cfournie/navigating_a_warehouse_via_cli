@@ -3,7 +3,7 @@ Navigating a Data Warehouse via CLI
 
 A talk I gave at Pycon Canada 2017, Montréal, QC, Canada.
 
-`These slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in HTML using the `remark <https://github.com/gnab/remark>`_ framework with graphs created using `mermaid <https://github.com/knsv/mermaid>`_ and code highlighting using `highlight.js <https://highlightjs.org/>`_.
+The `slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in HTML using the `remark <https://github.com/gnab/remark>`_ js framework with graphs created using `mermaid <https://github.com/knsv/mermaid>`_ js and code highlighting using `highlight.js <https://highlightjs.org/>`_.
 
 
 Code
