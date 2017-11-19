@@ -24,8 +24,7 @@ AUTHOR = 'Chris Fournier'
 REQUIRED = [
     'codenamize>=1.2.2',
     'networkx>=2',
-    'pygraphviz==1.4rc1',
-    'setuptools>=34.3'
+    'pygraphviz==1.4rc1'
 ]
 
 EXTRAS = {
@@ -67,6 +66,7 @@ setuptools.setup(
     author_email=EMAIL,
     url=URL,
     py_modules=['navigate_warehouse_via_cli'],
+    setup_requires=['setuptools>=34.3'],
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
