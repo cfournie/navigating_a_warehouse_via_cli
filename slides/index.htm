@@ -83,8 +83,10 @@ class: center, middle
 
 # Navigating a Data Warehouse<br>via CLI
 <br>
-<span style="font-size: 0.8em">Chris Fournier (@cfournie)</span>
-<br><br><br>
+<span style="font-size: 0.8em">Chris Fournier (@cfournie)</span><br>
+<span style="font-size: 0.6em">Pycon Canada 2017, Montréal, QC, Canada</span>
+
+<br>
 <img src="./shopify_monotone_white.svg" height="70pt" />
 
 ???
@@ -316,7 +318,7 @@ confused-indy  |7  |luxury-med     |xlarge   |
 
 ???
 
-What we really want is to view our job metadata as a table so that we can filter job rows by one or more columns to find the jobs and their datasets affected by a bug.
+What we really want is to view our job metadata as a table. That way each row consolidates all the information about a job, and if we were able to filter this table by its columns, then we could find groups of jobs that share similar properties.
 
 
 ---
@@ -343,9 +345,9 @@ for flow in flows:
 
 ???
 
-Thankfully, the YAML files that contain our metadata are in the same repository as our Python job implementations and scheduling code, so we can reuse our existing parsers and make a script to generate this table!
+Thankfully, we already had some Python YAML parsing code laying around to schedule our jobs, so we can reuse these parsers and make a script to generate this table!
 
-Let's just parse this schedule and print to the console one row of tab-separated values at a time.
+Let's parse our schedule and print to the console one row of tab-separated values at a time.
 
 I can't show you our actual schedule, but I can show you an automatically generated one, and you can visit the git repo at the bottom of these slides and follow along if you like. Here's a snippet from the `jobs.py` script.
 
