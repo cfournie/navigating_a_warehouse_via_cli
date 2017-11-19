@@ -803,16 +803,13 @@ And there you have it, a way to generate metadata tables about jobs/datasets usi
 
 What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
 
-This strategy of filtering metadata to find jobs that are affected by a bug has proven invaluable. We've used it to assess the impact of a variety of bugs, including:
+Why do we use these UNIX tools and Python scripts to do impact assessment? This can't the easiest way to do this. And you need to learn a lot of commands.
 
-- A bug where only jobs that read and filtered Parquet files by time were truncating our millisecond-level precision timestamps to the nearest second, losing up to ~2s of data on every read.
-- Another bug where only jobs reading specific MySQL databases were missing rows because they weren't configured to read from two newly added shards.
-- And another bug where jobs reading certain Kafka topics had to have their data rebuilt because those topics contained duplicates after MirrorMaker was erroneously configured to mirror to the same cluster that it read from. Oops.
+Well, that's my fault. A while ago I took na interest in developing a minimalist programming experience, moving from using Eclipse as an editor to vi/emacs, from relying on my editor to tell me about a software project to instead using UNIX tools and the CLI instead, and trying as much as possible to only interact with the CLI when developing.
 
-And in all of these situations, using this strategy and having scripts to generate up to date tables has saved us countless minutes or even hours because we were prepared when PagerDuty woke us up at midnight with standardized tables to parse and replicable results.
+I originally built these scripts and learned to use these tools to supplement my own dev environment and because it's fun. But, then one late night on Slack we needed an answer to the question "how many datasets were affected by this incident"? And, it being late, I grabbed the tool that I had on hand. And we liked it.
 
-Before we had these tools, people were trying to write bespoke Python scripts in the middle of the night and coming up with conflicting results. Now, thanks to these tools, reproducible impact analysis is a breeze (and fun)!
-
+All of a suddent instead of writing bespoke Python scripts to find jobs affected by an issue, we had prepared scripted tables of metadata. No more reading someones untested code at 1AM to figure out the list of affected jobs. With a git SHA, these tables (along with some "simple" bash) provide a reproducible and way to analyse our schedule that doesn't rely on one the systems that we're debugging.
 
 ---
 
@@ -833,7 +830,7 @@ Before we had these tools, people were trying to write bespoke Python scripts in
 
 ???
 
-So to summarize, I showed you the benefit of keeping your Python script really simply and instead of adding features to it, leveraging the power of a few UNIX tools to make the most out of your tabular output. Those tools being:
+So to summarize, I showed you the benefit of keeping your Python script really simply and instead of adding features to it, leveraging the power of a few UNIX tools to make the most out of tabular output. Those tools being:
 
 ...
 
