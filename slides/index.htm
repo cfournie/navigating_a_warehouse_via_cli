@@ -805,11 +805,11 @@ What I showed you here was an artificial scenario, but all of the principles are
 
 Why do we use these UNIX tools and Python scripts to do impact assessment? This can't the easiest way to do this. And you need to learn a lot of commands.
 
-Well, that's my fault. A while ago I took na interest in developing a minimalist programming experience, moving from using Eclipse as an editor to vi/emacs, from relying on my editor to tell me about a software project to instead using UNIX tools and the CLI instead, and trying as much as possible to only interact with the CLI when developing.
+Well, that's my fault. A while ago I took an interest in developing a minimalist programming experience, moving from using Eclipse as an editor to vi/emacs, from relying on my editor to tell me about a software project to instead using UNIX tools and the CLI instead, and trying as much as possible to only interact with the CLI when developing.
 
-I originally built these scripts and learned to use these tools to supplement my own dev environment and because it's fun. But, then one late night on Slack we needed an answer to the question "how many datasets were affected by this incident"? And, it being late, I grabbed the tool that I had on hand. And we liked it.
+I originally built these scripts and learned to use these tools to supplement my own dev environment and because it's fun. But, then late one night on Slack we needed an answer to the question "how many datasets were affected by this incident"? And, being tired, I grabbed the tool that I had on hand. And we liked it.
 
-All of a suddent instead of writing bespoke Python scripts to find jobs affected by an issue, we had prepared scripted tables of metadata. No more reading someones untested code at 1AM to figure out the list of affected jobs. With a git SHA, these tables (along with some "simple" bash) provide a reproducible and way to analyse our schedule that doesn't rely on one the systems that we're debugging.
+Now instead of writing bespoke Python scripts to find jobs affected by an issue, we have prepared scripted tables of metadata. No more reading someones untested code at 1AM to figure out the list of affected jobs. With a git SHA, these tables (along with some UNIX tools) provide a reproducible way to analyse our schedule that doesn't rely on one of the systems that we're debugging.
 
 ---
 
