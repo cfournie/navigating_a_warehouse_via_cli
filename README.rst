@@ -1,7 +1,9 @@
-Navigating a Data Warehouse via CLI
-=============
+
 .. image:: https://travis-ci.org/cfournie/navigating_a_warehouse_via_cli.svg?branch=master
     :target: https://travis-ci.org/cfournie/navigating_a_warehouse_via_cli
+
+Navigating a Data Warehouse via CLI
+=============
 
 This repository contains a talk (and its accompanying code) that I gave at Pycon Canada 2017, Montréal, QC, Canada.
 
