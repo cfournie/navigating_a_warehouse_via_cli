@@ -191,6 +191,7 @@ def test_create_downstream(graph):
     ])
 
 
+@pytest.mark.xfail
 def test_draw(graph, tmpdir):
     path = tmpdir.join('graph.dot')
     schedule.draw(graph, str(path))
