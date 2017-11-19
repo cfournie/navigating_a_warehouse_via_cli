@@ -178,7 +178,7 @@ We predominantly run ETL jobs every few hours that:
   - Transform that extracted data into a dataset (for example "GMV per shop"), and then
   - Load that into a database for analysts to issue queries against and create reports upon
 
-The batch jobs that we run in our warehouse are written mostly in Python on top of PySpark by our analysts (sometimes with the help of our engineers). The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
+The batch jobs that we run in our warehouse are written in Python on top of PySpark by our analysts. The number of these batch jobs, their implementations, and whether a job reads a specific dataset or not changes frequently, making it difficult to keep an up to date picture of how everything works in ones head. How frequently do our jobs change?
 
 
 ---
