@@ -789,28 +789,26 @@ And there you have it, a way to generate metadata tables about jobs/datasets usi
 ---
 
 
-## How to trace bad data
+## *SQL-like* CLI using Python & UNIX tools
 <div style="font-size:0.85em;margin: auto;width:78%">
 .left[
-1. Find *bad jobs/outputs*
-  - Find properties describing a bug
-  - Filter *metadata tables* for affected jobs<br><br>
-2. Find *affected* downstream outputs
-  - Join affected job outputs to *tables of paths* to get downstream
+1. *Filter* table of jobs and outputs
+2. *Join* against table of downstream outputs 
 ]
 </div>
 <br>
 
 ???
 
+So that's how you get a SQL-like interface on the CLI using Python and some UNIX tools!
 
-What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
+What I showed you here was an artificial scenario, but all of the principles are the same in the version of these scripts that we use on my team day to day. We find bad datasets and join them against a list of everything downstream of them to figure our what needs to be fixed.
 
-Why do we use these UNIX tools and Python scripts to do impact assessment? This can't the easiest way to do this. And you need to learn a lot of commands.
+Why do we use this interface to do impact assessment? This can't be the easiest way to do this. And you need to learn a lot of commands.
 
 Well, that's my fault. A while ago I took an interest in developing a minimalist programming experience, moving from using Eclipse as an editor to vi/emacs, from relying on my editor to tell me about a software project to instead using UNIX tools and the CLI instead, and trying as much as possible to only interact with the CLI when developing.
 
-I originally built these scripts and learned to use these tools to supplement my own dev environment and because it's fun. But, then late one night on Slack we needed an answer to the question "how many datasets were affected by this incident"? And, being tired, I grabbed the tool that I had on hand. And we liked it.
+I originally built these scripts and learned to use these tools to supplement my own dev environment and because it's fun. But, then late one night on Slack we needed an answer to the question "how many datasets were affected by this incident"? And I grabbed the tool that I had on hand. And we liked it.
 
 Now instead of writing bespoke Python scripts to find jobs affected by an issue, we have prepared scripted tables of metadata. No more reading someones untested code at 1AM to figure out the list of affected jobs. With a git SHA, these tables (along with some UNIX tools) provide a reproducible way to analyse our schedule that doesn't rely on one of the systems that we're debugging.
 
