@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Based on https://github.com/kennethreitz/setup.py
+
 # Note: To use the 'upload' functionality of this file, you must:
 #   $ pip install twine
 
