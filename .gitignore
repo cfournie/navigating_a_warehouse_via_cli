@@ -1,6 +1,8 @@
 .cache/
 .DS_Store
-.mypy_cache/
-__pycache__/
+*.eggs/
 *.egg-info/
+.mypy_cache/
+*.py[cod]
 *.pdf
+__pycache__/
