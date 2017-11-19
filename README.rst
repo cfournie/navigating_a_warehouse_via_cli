@@ -1,12 +1,14 @@
 Navigating a Data Warehouse via CLI
 =============
+.. image:: https://travis-ci.org/cfournie/navigating_a_warehouse_via_cli.svg?branch=master
+    :target: https://travis-ci.org/cfournie/navigating_a_warehouse_via_cli
 
-A talk I gave at Pycon Canada 2017, Montréal, QC, Canada.
+This repository contains a talk (and its accompanying code) that I gave at Pycon Canada 2017, Montréal, QC, Canada.
 
 The `slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in HTML using the `remark <https://github.com/gnab/remark>`_ js framework with graphs created using `mermaid <https://github.com/knsv/mermaid>`_ js and code highlighting using `highlight.js <https://highlightjs.org/>`_.
 
 
-Code
+Code 
 ----
 Requires Python 3.6 and either Linux/OSX.
 
