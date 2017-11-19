@@ -13,6 +13,8 @@ Slides
 ----
 The `slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in HTML using the `remark <https://github.com/gnab/remark>`_ js framework with graphs created using `mermaid <https://github.com/knsv/mermaid>`_ js and code highlighting using `highlight.js <https://highlightjs.org/>`_.
 
+You might ask, "why are some of the slides blank?" That's because I gave a live-demo of some scripts (provided in this repo) during those slides. You can see what I ran by reading the speakers notes in the HTML version of the slides. When the video of the talk is posted I'll add a link to it here.
+
 
 Code 
 ----
