@@ -7,6 +7,10 @@ Navigating a Data Warehouse via CLI
 
 This repository contains a talk (and its accompanying code) that I gave at Pycon Canada 2017, Montréal, QC, Canada.
 
+**Abstract**: At Shopify we have over 3000 Python batch ETL jobs in our data warehouse arranged in a directed graph producing data between them. Navigating this graph to assess the impact of bugs is challenging. To solve this, we’ve made Python CLI tools that combined with other Unix tools help us reason about these jobs.
+
+Slides
+----
 The `slides <./slides/index.htm>`_ [`PDF <slides/slides.pdf>`_] are written in HTML using the `remark <https://github.com/gnab/remark>`_ js framework with graphs created using `mermaid <https://github.com/knsv/mermaid>`_ js and code highlighting using `highlight.js <https://highlightjs.org/>`_.
 
 
